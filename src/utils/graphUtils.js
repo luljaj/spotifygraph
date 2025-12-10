@@ -57,8 +57,8 @@ export function artistsToGraphData(artists) {
 function calculateNodeSize(index, total) {
   // Exponential decay: top artists are much larger
   const normalizedRank = 1 - (index / total)
-  const minSize = 3
-  const maxSize = 25
+  const minSize = 2
+  const maxSize = 12
   return minSize + (maxSize - minSize) * Math.pow(normalizedRank, 1.5)
 }
 

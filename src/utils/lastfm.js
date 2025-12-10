@@ -11,13 +11,13 @@ console.log('[Last.fm] API Key configured:', API_KEY ? `Yes (${API_KEY.substring
  * @param {number} limit - Number of artists to fetch (max 1000)
  * @param {string} period - Time period: overall, 7day, 1month, 3month, 6month, 12month
  */
-export async function fetchTopArtists(username, limit = 100, period = 'overall') {
+export async function fetchTopArtists(username, limit = 130, period = 'overall') {
   const params = new URLSearchParams({
     method: 'user.gettopartists',
     user: username,
     api_key: API_KEY,
     format: 'json',
-    limit: limit.toString(),
+    limit: 500,
     period
   })
 
@@ -92,6 +92,8 @@ export async function fetchSimilarArtists(artistName, limit = 20) {
   })
 
   const response = await fetch(`${LASTFM_API_BASE}?${params}`)
+
+  console.log(response)
   
   if (!response.ok) {
     return []
@@ -107,7 +109,7 @@ export async function fetchSimilarArtists(artistName, limit = 20) {
  * @param {number} limit - Number of artists
  * @param {string} period - Time period
  */
-export async function fetchTopArtistsWithTags(username, limit = 500, period = 'overall') {
+export async function fetchTopArtistsWithTags(username, limit = 130, period = 'overall') {
   console.log('[Last.fm] fetchTopArtistsWithTags called:', { username, limit, period })
   
   // First get top artists
