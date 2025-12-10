@@ -3,12 +3,22 @@ import ForceGraph2D from 'react-force-graph-2d'
 import { calculateClusterCenters } from '../utils/graphUtils'
 import './SpotifyGraph.css'
 
-function SpotifyGraph({ data, onNodeClick, showGenreLabels }) {
+function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
   const graphRef = useRef()
   const containerRef = useRef()
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const [hoveredNode, setHoveredNode] = useState(null)
   const [clusterCenters, setClusterCenters] = useState([])
+
+  // Default settings
+  const {
+    labelOpacity = 0.8,
+    nodeScale = 1,
+    linkOpacity = 0.3,
+    chargeStrength = -100,
+    linkDistance = 50,
+    showAllLabels = true
+  } = settings || {}
 
   // Handle window resize
   useEffect(() => {
@@ -29,7 +39,6 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels }) {
   // Update cluster centers after graph simulation
   useEffect(() => {
     if (graphRef.current && data.genreClusters?.length > 0) {
-      // Wait for simulation to settle
       const timer = setTimeout(() => {
         const centers = calculateClusterCenters(data.nodes, data.genreClusters)
         setClusterCenters(centers)
@@ -38,20 +47,28 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels }) {
     }
   }, [data])
 
-  // Custom node rendering
+  // Update force simulation when settings change
+  useEffect(() => {
+    if (graphRef.current) {
+      graphRef.current.d3Force('charge')?.strength(chargeStrength)
+      graphRef.current.d3Force('link')?.distance(linkDistance)
+      graphRef.current.d3ReheatSimulation()
+    }
+  }, [chargeStrength, linkDistance])
+
+  // Custom node rendering - colored dots with names below
   const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
-    const size = node.val || 5
+    const baseSize = node.val || 5
+    const size = baseSize * nodeScale
     const isHovered = hoveredNode?.id === node.id
     
     // Draw node circle
     ctx.beginPath()
     ctx.arc(node.x, node.y, size, 0, 2 * Math.PI)
-    
-    // Fill with gradient-like effect
     ctx.fillStyle = node.color || '#1DB954'
     ctx.fill()
     
-    // Add glow effect on hover
+    // Add glow/border effect on hover
     if (isHovered) {
       ctx.shadowColor = node.color || '#1DB954'
       ctx.shadowBlur = 20
@@ -61,50 +78,23 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels }) {
       ctx.shadowBlur = 0
     }
 
-    // Draw artist image if available and node is large enough
-    if (node.image && size > 8) {
-      const img = new Image()
-      img.src = node.image
-      
-      if (img.complete) {
-        ctx.save()
-        ctx.beginPath()
-        ctx.arc(node.x, node.y, size - 2, 0, 2 * Math.PI)
-        ctx.clip()
-        ctx.drawImage(img, node.x - size + 2, node.y - size + 2, (size - 2) * 2, (size - 2) * 2)
-        ctx.restore()
-      }
-    }
-
-    // Draw label on hover
-    if (isHovered) {
+    // Draw name below the node (always visible or on hover based on settings)
+    if (showAllLabels || isHovered) {
       const label = node.name
-      const fontSize = Math.max(12, size * 0.8)
-      ctx.font = `600 ${fontSize}px 'Instrument Sans', sans-serif`
+      // Font size proportional to node size
+      const fontSize = Math.max(8, Math.min(14, size * 0.6))
+      ctx.font = `500 ${fontSize}px 'Instrument Sans', sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'top'
       
-      // Background for label
-      const textWidth = ctx.measureText(label).width
-      const padding = 6
-      const labelY = node.y + size + 8
+      const labelY = node.y + size + 4
       
-      ctx.fillStyle = 'rgba(10, 10, 15, 0.9)'
-      ctx.beginPath()
-      ctx.roundRect(
-        node.x - textWidth / 2 - padding,
-        labelY - padding / 2,
-        textWidth + padding * 2,
-        fontSize + padding,
-        4
-      )
-      ctx.fill()
-      
-      // Label text
-      ctx.fillStyle = '#f0f0f5'
+      // Set opacity for labels
+      const opacity = isHovered ? 1 : labelOpacity
+      ctx.fillStyle = `rgba(240, 240, 245, ${opacity})`
       ctx.fillText(label, node.x, labelY)
     }
-  }, [hoveredNode])
+  }, [hoveredNode, nodeScale, labelOpacity, showAllLabels])
 
   // Custom link rendering
   const linkCanvasObject = useCallback((link, ctx) => {
@@ -113,9 +103,10 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels }) {
     
     if (!start.x || !end.x) return
     
-    // Calculate opacity based on edge weight (more shared genres = more opaque)
+    // Calculate opacity based on edge weight
     const maxWeight = 5
-    const opacity = 0.1 + (Math.min(link.value, maxWeight) / maxWeight) * 0.4
+    const baseOpacity = 0.05 + (Math.min(link.value, maxWeight) / maxWeight) * 0.3
+    const opacity = baseOpacity * linkOpacity
     
     ctx.beginPath()
     ctx.moveTo(start.x, start.y)
@@ -123,7 +114,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels }) {
     ctx.strokeStyle = `rgba(29, 185, 84, ${opacity})`
     ctx.lineWidth = Math.max(0.5, link.value * 0.3)
     ctx.stroke()
-  }, [])
+  }, [linkOpacity])
 
   // Handle node hover
   const handleNodeHover = useCallback((node) => {
@@ -215,4 +206,3 @@ function getClusterColor(index) {
 }
 
 export default SpotifyGraph
-

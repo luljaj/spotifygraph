@@ -60,6 +60,24 @@
   gap: var(--spacing-sm);
 }
 
+.header__source {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--source-color, var(--color-accent));
+  background: color-mix(in srgb, var(--source-color, var(--color-accent)) 15%, transparent);
+  border-radius: var(--radius-full);
+  margin-left: var(--spacing-sm);
+}
+
+.header__username {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
 /* Main */
 .main {
   flex: 1;

@@ -105,8 +105,86 @@
   font-size: 1.125rem;
   color: var(--color-text-secondary);
   max-width: 360px;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
   line-height: 1.6;
+}
+
+/* Source Tabs */
+.login__tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-xs);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+}
+
+.login__tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+}
+
+.login__tab:hover {
+  color: var(--color-text-primary);
+}
+
+.login__tab--active {
+  color: #000;
+  background: var(--color-accent);
+}
+
+.login__tab--active.login__tab--lastfm {
+  background: #d51007;
+  color: #fff;
+}
+
+/* Login form */
+.login__form {
+  width: 100%;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.login__input-group {
+  width: 100%;
+}
+
+.login__input {
+  width: 100%;
+  padding: var(--spacing-md);
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-bg-elevated);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.login__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.login__input:focus {
+  outline: none;
+  border-color: #d51007;
+  box-shadow: 0 0 0 3px rgba(213, 16, 7, 0.2);
+}
+
+.login__error {
+  font-size: 0.875rem;
+  color: #ff6b6b;
+  text-align: center;
 }
 
 /* Login button */
@@ -135,6 +213,33 @@
 
 .login__button:active {
   transform: translateY(0);
+}
+
+.login__button--spotify {
+  background: var(--color-accent);
+  box-shadow: 0 4px 20px rgba(29, 185, 84, 0.4);
+}
+
+.login__button--spotify:hover {
+  background: var(--color-accent-hover);
+  box-shadow: 0 8px 30px rgba(29, 185, 84, 0.5);
+}
+
+.login__button--lastfm {
+  background: #d51007;
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(213, 16, 7, 0.4);
+}
+
+.login__button--lastfm:hover {
+  background: #ba0d06;
+  box-shadow: 0 8px 30px rgba(213, 16, 7, 0.5);
+}
+
+.login__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .login__spotify-icon {

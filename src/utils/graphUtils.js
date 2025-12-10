@@ -10,13 +10,16 @@ export function artistsToGraphData(artists) {
   const nodes = artists.map((artist, index) => ({
     id: artist.id,
     name: artist.name,
-    genres: artist.genres,
+    genres: artist.genres || [],
     popularity: artist.popularity,
     followers: artist.followers?.total || 0,
     image: artist.images?.[0]?.url || null,
     spotifyUrl: artist.external_urls?.spotify,
+    lastfmUrl: artist.lastfmUrl || artist.external_urls?.lastfm,
+    playcount: artist.playcount,
+    source: artist.source || 'spotify',
     // Size based on popularity (index used as proxy for listening frequency)
-    // Lower index = more listened to (Spotify returns sorted by listen count)
+    // Lower index = more listened to (both services return sorted by listen count)
     val: calculateNodeSize(index, artists.length),
     // Color will be assigned based on primary genre
     color: null

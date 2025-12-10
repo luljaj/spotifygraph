@@ -153,26 +153,45 @@
   background: var(--color-bg-elevated);
 }
 
-/* Spotify link */
-.artist-card__spotify-link {
+/* External links */
+.artist-card__link {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
   width: calc(100% - var(--spacing-lg) * 2);
-  margin: 0 var(--spacing-lg) var(--spacing-lg);
+  margin: 0 var(--spacing-lg) var(--spacing-sm);
   padding: var(--spacing-md);
   font-size: 0.875rem;
   font-weight: 600;
-  color: #000;
-  background: var(--color-accent);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
 }
 
-.artist-card__spotify-link:hover {
+.artist-card__link:last-of-type {
+  margin-bottom: var(--spacing-lg);
+}
+
+.artist-card__link--spotify {
+  color: #000;
+  background: var(--color-accent);
+}
+
+.artist-card__link--spotify:hover {
   background: var(--color-accent-hover);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-glow);
+  box-shadow: 0 4px 20px rgba(29, 185, 84, 0.4);
 }
+
+.artist-card__link--lastfm {
+  color: #fff;
+  background: #d51007;
+}
+
+.artist-card__link--lastfm:hover {
+  background: #ba0d06;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(213, 16, 7, 0.4);
+}
+
 
