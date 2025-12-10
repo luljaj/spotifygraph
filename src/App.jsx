@@ -1,46 +1,35 @@
-import { useState } from 'react'
-import { useSpotifyAuth } from './hooks/useSpotifyAuth'
-import { useSpotifyData } from './hooks/useSpotifyData'
-import Login from './components/Login'
+import { useState, useEffect } from 'react'
+import { artistsToGraphData } from './utils/graphUtils'
 import SpotifyGraph from './components/SpotifyGraph'
 import SettingsPanel from './components/SettingsPanel'
 import ArtistDetails from './components/ArtistDetails'
 import './App.css'
 
 function App() {
-  const { token, login, logout, isLoading: authLoading } = useSpotifyAuth()
-  const { artists, graphData, isLoading: dataLoading, error } = useSpotifyData(token)
+  const [graphData, setGraphData] = useState({ nodes: [], links: [], genreClusters: [] })
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [selectedArtist, setSelectedArtist] = useState(null)
   const [showGenreLabels, setShowGenreLabels] = useState(true)
 
-  // Export artist data as JSON file
-  const exportData = () => {
-    const dataStr = JSON.stringify(artists, null, 2)
-    const blob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'test_data.json'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
-  if (authLoading) {
-    return (
-      <div className="app app--loading">
-        <div className="loader">
-          <div className="loader__ring"></div>
-          <span>Connecting to Spotify...</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (!token) {
-    return <Login onLogin={login} />
-  }
+  // Load test data on mount
+  useEffect(() => {
+    const loadTestData = async () => {
+      try {
+        const response = await fetch('/test_data.json')
+        if (!response.ok) throw new Error('Failed to load test data')
+        const artists = await response.json()
+        const data = artistsToGraphData(artists)
+        setGraphData(data)
+      } catch (err) {
+        console.error('Failed to load test data:', err)
+        setError(err.message)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadTestData()
+  }, [])
 
   if (error) {
     return (
@@ -48,9 +37,6 @@ function App() {
         <div className="error-card">
           <h2>Something went wrong</h2>
           <p>{error}</p>
-          <button className="btn btn--primary" onClick={logout}>
-            Try Again
-          </button>
         </div>
       </div>
     )
@@ -77,23 +63,14 @@ function App() {
           </svg>
           <h1 className="header__title">Spotify Graph</h1>
         </div>
-        <div className="header__actions">
-          {artists.length > 0 && (
-            <button className="btn btn--ghost" onClick={exportData}>
-              Export Data
-            </button>
-          )}
-          <button className="btn btn--ghost" onClick={logout}>
-            Logout
-          </button>
-        </div>
+        <span className="header__badge">Test Mode</span>
       </header>
 
       <main className="main">
-        {dataLoading ? (
+        {isLoading ? (
           <div className="loader">
             <div className="loader__ring"></div>
-            <span>Loading your music taste...</span>
+            <span>Loading graph data...</span>
           </div>
         ) : (
           <SpotifyGraph
@@ -120,4 +97,3 @@ function App() {
 }
 
 export default App
-
