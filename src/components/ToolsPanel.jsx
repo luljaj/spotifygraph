@@ -1,6 +1,6 @@
 import './ToolsPanel.css'
 
-function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenreLabels }) {
+function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenreLabels, onClose }) {
   const handleChange = (key, value) => {
     onSettingsChange({ ...settings, [key]: value })
   }
@@ -8,11 +8,18 @@ function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenre
   return (
     <div className="tools-panel">
       <div className="tools-panel__header">
-        <svg className="tools-panel__icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
-        </svg>
-        <span>Graph Settings</span>
+        <div className="tools-panel__header-left">
+          <svg className="tools-panel__icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+          <span>Settings</span>
+        </div>
+        <button className="tools-panel__close" onClick={onClose} title="Close">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
       </div>
       
       <div className="tools-panel__content">
@@ -53,7 +60,7 @@ function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenre
         <div className="tools-panel__group">
           <label className="slider">
             <div className="slider__header">
-              <span className="slider__label">Node Size</span>
+              <span className="slider__label">Star Size</span>
               <span className="slider__value">{settings.nodeScale.toFixed(1)}x</span>
             </div>
             <input
@@ -71,7 +78,7 @@ function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenre
         <div className="tools-panel__group">
           <label className="slider">
             <div className="slider__header">
-              <span className="slider__label">Link Opacity</span>
+              <span className="slider__label">Connection Opacity</span>
               <span className="slider__value">{Math.round(settings.linkOpacity * 100)}%</span>
             </div>
             <input
@@ -89,7 +96,7 @@ function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenre
         <div className="tools-panel__group">
           <label className="slider">
             <div className="slider__header">
-              <span className="slider__label">Node Repulsion</span>
+              <span className="slider__label">Gravity Repulsion</span>
               <span className="slider__value">{Math.abs(settings.chargeStrength)}</span>
             </div>
             <input
@@ -107,7 +114,7 @@ function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenre
         <div className="tools-panel__group">
           <label className="slider">
             <div className="slider__header">
-              <span className="slider__label">Link Distance</span>
+              <span className="slider__label">Connection Distance</span>
               <span className="slider__value">{settings.linkDistance}px</span>
             </div>
             <input

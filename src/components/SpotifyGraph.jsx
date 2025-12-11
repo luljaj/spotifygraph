@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState, useMemo } from 'react'
+import { useRef, useCallback, useEffect, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { forceCenter, forceX, forceY } from 'd3-force'
 import { calculateClusterCenters } from '../utils/graphUtils'
@@ -8,6 +8,10 @@ import './SpotifyGraph.css'
 const STAR_COUNT = 200
 const TWINKLE_SPEED = 0.02
 
+// Link glow animation configuration
+const GLOW_FADE_IN_SPEED = 0.08
+const GLOW_FADE_OUT_SPEED = 0.04
+
 function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
   const graphRef = useRef()
   const containerRef = useRef()
@@ -15,6 +19,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
   const starsRef = useRef([])
   const animationRef = useRef()
   const imageCache = useRef({})
+  const linkGlowStates = useRef({}) // Track glow intensity for each link
   
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const [hoveredNode, setHoveredNode] = useState(null)
@@ -276,38 +281,67 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     }
   }, [hoveredNode, nodeScale])
 
-  // Custom link rendering - constellation lines
+  // Custom link rendering - constellation lines with fading glow
   const linkCanvasObject = useCallback((link, ctx) => {
     const start = link.source
     const end = link.target
     
     if (!start.x || !end.x) return
     
+    // Create unique link ID for tracking glow state
+    const linkId = `${link.source.id || link.source}-${link.target.id || link.target}`
+    
+    // Check if this link should be glowing
     const isHovered = hoveredLink === link || 
       hoveredNode?.id === start.id || 
       hoveredNode?.id === end.id
     
-    // Default: very subtle dark constellation lines
-    // Hovered: glowing white lines
-    const baseOpacity = isHovered ? 0.8 : 0.08
-    const lineWidth = isHovered ? 1.5 : 0.5
-    const color = isHovered ? 'rgba(255, 255, 255,' : 'rgba(100, 120, 150,'
+    // Get current glow intensity (0 to 1)
+    let glowIntensity = linkGlowStates.current[linkId] || 0
     
-    // Draw the line
+    // Animate glow intensity
+    if (isHovered) {
+      // Fade in
+      glowIntensity = Math.min(1, glowIntensity + GLOW_FADE_IN_SPEED)
+    } else {
+      // Fade out
+      glowIntensity = Math.max(0, glowIntensity - GLOW_FADE_OUT_SPEED)
+    }
+    linkGlowStates.current[linkId] = glowIntensity
+    
+    // Calculate visual properties based on glow intensity
+    const baseOpacity = 0.06 + glowIntensity * 0.7
+    const lineWidth = 0.5 + glowIntensity * 1.5
+    
+    // Color transition from dark gray to white
+    const r = Math.round(80 + glowIntensity * 175)
+    const g = Math.round(100 + glowIntensity * 155)
+    const b = Math.round(130 + glowIntensity * 125)
+    
+    // Draw the main line
     ctx.beginPath()
     ctx.moveTo(start.x, start.y)
     ctx.lineTo(end.x, end.y)
-    ctx.strokeStyle = `${color} ${baseOpacity})`
+    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${baseOpacity})`
     ctx.lineWidth = lineWidth
     ctx.stroke()
     
-    // Add glow effect on hover
-    if (isHovered) {
+    // Draw outer glow when there's any glow intensity
+    if (glowIntensity > 0.01) {
+      // Outer soft glow
       ctx.beginPath()
       ctx.moveTo(start.x, start.y)
       ctx.lineTo(end.x, end.y)
-      ctx.strokeStyle = 'rgba(150, 180, 255, 0.3)'
-      ctx.lineWidth = 4
+      ctx.strokeStyle = `rgba(150, 180, 255, ${glowIntensity * 0.25})`
+      ctx.lineWidth = 6 * glowIntensity
+      ctx.stroke()
+      
+      // Inner bright glow
+      ctx.beginPath()
+      ctx.moveTo(start.x, start.y)
+      ctx.lineTo(end.x, end.y)
+      ctx.strokeStyle = `rgba(200, 220, 255, ${glowIntensity * 0.15})`
+      ctx.lineWidth = 10 * glowIntensity
       ctx.stroke()
     }
   }, [hoveredNode, hoveredLink])
