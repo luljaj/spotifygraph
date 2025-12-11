@@ -35,7 +35,7 @@ function App() {
   const { artists, graphData, isLoading: dataLoading, error, progress } = activeData
   
   const [selectedArtist, setSelectedArtist] = useState(null)
-  const [showGenreLabels, setShowGenreLabels] = useState(true)
+  const [showGenreLabels, setShowGenreLabels] = useState(false)
   const [graphSettings, setGraphSettings] = useState(DEFAULT_SETTINGS)
   const [showSettings, setShowSettings] = useState(false)
 

@@ -5,12 +5,13 @@ import { calculateClusterCenters } from '../utils/graphUtils'
 import './SpotifyGraph.css'
 
 // Starfield configuration
-const STAR_COUNT = 200
+const STAR_COUNT = 250
 const TWINKLE_SPEED = 0.02
+const PARALLAX_STRENGTH = 0.15 // How much stars move relative to camera
 
 // Link glow animation configuration
 const GLOW_FADE_IN_SPEED = 0.08
-const GLOW_FADE_OUT_SPEED = 0.04
+const GLOW_FADE_OUT_SPEED = 0.12
 
 function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
   const graphRef = useRef()
@@ -20,6 +21,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
   const animationRef = useRef()
   const imageCache = useRef({})
   const linkGlowStates = useRef({}) // Track glow intensity for each link
+  const cameraOffset = useRef({ x: 0, y: 0, k: 1 }) // Track camera position
   
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const [hoveredNode, setHoveredNode] = useState(null)
@@ -33,23 +35,27 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     linkDistance = 50,
   } = settings || {}
 
-  // Generate stars once
+  // Generate stars with depth layers for parallax
   const generateStars = useCallback((width, height) => {
     const stars = []
     for (let i = 0; i < STAR_COUNT; i++) {
+      // Depth layer: 0 = far (slow parallax), 1 = near (fast parallax)
+      const depth = Math.random()
       stars.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        radius: Math.random() * 1.5 + 0.5,
-        opacity: Math.random(),
+        baseX: Math.random() * width * 1.5 - width * 0.25, // Wider area for parallax
+        baseY: Math.random() * height * 1.5 - height * 0.25,
+        radius: 0.5 + depth * 1.2, // Nearer stars are bigger
+        opacity: 0.3 + depth * 0.7, // Nearer stars are brighter
+        depth: depth,
         twinkleOffset: Math.random() * Math.PI * 2,
         twinkleSpeed: (Math.random() * 0.5 + 0.5) * TWINKLE_SPEED
       })
     }
-    return stars
+    // Sort by depth so far stars render first
+    return stars.sort((a, b) => a.depth - b.depth)
   }, [])
 
-  // Initialize starfield
+  // Initialize starfield with parallax
   useEffect(() => {
     if (!starfieldRef.current) return
     
@@ -63,23 +69,37 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
       ctx.fillStyle = '#050510'
       ctx.fillRect(0, 0, dimensions.width, dimensions.height)
       
-      // Draw stars with twinkling
+      const { x: camX, y: camY } = cameraOffset.current
+      const centerX = dimensions.width / 2
+      const centerY = dimensions.height / 2
+      
+      // Draw stars with twinkling and parallax
       starsRef.current.forEach(star => {
         const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset) * 0.5 + 0.5
         const opacity = star.opacity * twinkle * 0.8 + 0.2
         
+        // Apply parallax based on depth - stars move WITH camera (same direction)
+        // Deeper stars (low depth) move less, nearer stars move more
+        const parallaxFactor = star.depth * PARALLAX_STRENGTH
+        const starX = star.baseX + (camX - centerX) * parallaxFactor
+        const starY = star.baseY + (camY - centerY) * parallaxFactor
+        
+        // Wrap stars around screen edges for seamless effect
+        const wrappedX = ((starX % dimensions.width) + dimensions.width) % dimensions.width
+        const wrappedY = ((starY % dimensions.height) + dimensions.height) % dimensions.height
+        
         ctx.beginPath()
-        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
+        ctx.arc(wrappedX, wrappedY, star.radius, 0, Math.PI * 2)
         ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`
         ctx.fill()
         
-        // Add subtle glow to brighter stars
+        // Add subtle glow to brighter/nearer stars
         if (star.radius > 1.2) {
           ctx.beginPath()
-          ctx.arc(star.x, star.y, star.radius * 2, 0, Math.PI * 2)
+          ctx.arc(wrappedX, wrappedY, star.radius * 2, 0, Math.PI * 2)
           const gradient = ctx.createRadialGradient(
-            star.x, star.y, 0,
-            star.x, star.y, star.radius * 2
+            wrappedX, wrappedY, 0,
+            wrappedX, wrappedY, star.radius * 2
           )
           gradient.addColorStop(0, `rgba(200, 220, 255, ${opacity * 0.3})`)
           gradient.addColorStop(1, 'rgba(200, 220, 255, 0)')
@@ -366,6 +386,15 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     }
   }, [onNodeClick])
 
+  // Handle zoom/pan to update parallax
+  const handleZoom = useCallback((transform) => {
+    cameraOffset.current = {
+      x: transform.x,
+      y: transform.y,
+      k: transform.k
+    }
+  }, [])
+
   // Zoom to fit on load
   useEffect(() => {
     if (graphRef.current && data.nodes.length > 0) {
@@ -395,6 +424,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
         onNodeHover={handleNodeHover}
         onLinkHover={handleLinkHover}
         onNodeClick={handleNodeClick}
+        onZoom={handleZoom}
         nodeLabel={() => null}
         linkDirectionalParticles={0}
         d3AlphaDecay={0.02}
