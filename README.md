@@ -1,106 +1,19 @@
-# Spotify Graph
+# Sonova
 
-An interactive visualization of your Spotify listening data as a force-directed node graph. Artists are connected by shared genres, naturally forming clusters based on your music taste.
+An interactive visualization of your Spotify listening data as a graph. This is meant to represent looking through your music taste as constellations, with each artist being a star sized on listening, and edges being based on genres.
 
-![Spotify Graph](https://via.placeholder.com/800x400/0a0a0f/1DB954?text=Spotify+Graph)
+## Why
 
-## Features
+I love music, data visualization, and space. Thought this would be a great way to make these interests of mine meet. 
 
-- **OAuth Authentication** - Secure login with your Spotify account
-- **Top 100 Artists** - Visualizes your most-listened artists
-- **Genre Connections** - Artists connected by shared genre tags
-- **Force-Directed Layout** - Natural clustering by genre
-- **Interactive Graph** - Zoom, pan, and drag nodes
-- **Artist Details** - Click nodes to see artist info and open in Spotify
-- **Customizable Display** - Toggle genre cluster labels
+## Technical Challenges and Spec
 
-## Getting Started
+Took some learning graph visualization. 
 
-### Prerequisites
+Basically, it grabs your top artists off of the Spotify (or last.fm) API, which gives you artist names along with one or two genres, then makes a graph by iterating through the API call and connecting each artist which shares a genre with another one. 
 
-- Node.js 18+ 
-- A Spotify account
-- Spotify Developer credentials
+The rest is just CSS styling and some tweaking with node spacing. 
 
-### Setup
+## Goals and Future Ideas
 
-1. **Clone the repository**
-   ```bash
-   cd spotifygraph
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Create Spotify App**
-   - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Create a new app
-   - Add `http://localhost:3000` to Redirect URIs in app settings
-   - Copy your Client ID
-
-4. **Configure environment**
-   ```bash
-   # Create .env file
-   echo "VITE_SPOTIFY_CLIENT_ID=your_client_id_here" > .env
-   echo "VITE_SPOTIFY_REDIRECT_URI=http://localhost:3000" >> .env
-   ```
-
-5. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-6. **Open http://localhost:3000** and connect your Spotify account
-
-## Tech Stack
-
-- **React 18** - UI framework with hooks
-- **Vite** - Fast build tool and dev server
-- **react-force-graph-2d** - Force-directed graph visualization
-- **Spotify Web API** - Artist and user data
-
-## Project Structure
-
-```
-spotifygraph/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── components/
-│   │   ├── ArtistDetails.jsx   # Artist info modal
-│   │   ├── Login.jsx           # Spotify login screen
-│   │   ├── SettingsPanel.jsx   # Settings toggle
-│   │   └── SpotifyGraph.jsx    # Main graph visualization
-│   ├── hooks/
-│   │   ├── useSpotifyAuth.js   # Auth state management
-│   │   └── useSpotifyData.js   # Data fetching hook
-│   ├── utils/
-│   │   ├── graphUtils.js       # Graph data transformation
-│   │   └── spotify.js          # Spotify API utilities
-│   ├── App.jsx
-│   ├── App.css
-│   ├── index.css
-│   └── main.jsx
-├── index.html
-├── package.json
-├── vite.config.js
-└── README.md
-```
-
-## How It Works
-
-1. **Authentication**: Uses Spotify's Implicit Grant flow for client-side auth
-2. **Data Fetching**: Retrieves your top 50-100 artists from Spotify's `/me/top/artists` endpoint
-3. **Graph Generation**: 
-   - Each artist becomes a node
-   - Node size reflects listening frequency (rank)
-   - Edges connect artists sharing genres
-   - Edge weight = number of shared genres
-4. **Visualization**: Force-directed simulation naturally clusters related artists
-
-## License
-
-MIT
-
+I want this to feel like going through space, but the space is your own music graph. In the future, maybe this will have the option to spot even deeper connections, with different degrees of separation between artists. Last.fm tends to give better info on artists, bc of the call "getSimilarArtists", which makes it a bit easier.
