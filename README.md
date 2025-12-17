@@ -1,4 +1,4 @@
-# Sonova
+# Caneris
 
 An interactive visualization of your Spotify listening data as a graph. This is meant to represent looking through your music taste as constellations, with each artist being a star sized on listening, and edges being based on genres.
 
