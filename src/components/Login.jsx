@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import './Login.css'
 
 function Login({ onSpotifyLogin, onLastFmLogin }) {
@@ -6,6 +7,7 @@ function Login({ onSpotifyLogin, onLastFmLogin }) {
   const [lastfmUsername, setLastfmUsername] = useState('')
   const [isValidating, setIsValidating] = useState(false)
   const [error, setError] = useState('')
+  const [showInfo, setShowInfo] = useState(false)
 
   const handleLastFmSubmit = async (e) => {
     e.preventDefault()
@@ -29,7 +31,20 @@ function Login({ onSpotifyLogin, onLastFmLogin }) {
   return (
     <div className="login">
       <div className="login__content">
-        <h1 className="login__title">CANERIS</h1>
+        <div className="login__title-wrapper">
+          <Link 
+            to="/info" 
+            className={`login__info-link ${showInfo ? 'login__info-link--visible' : ''}`}
+          >
+            INFO
+          </Link>
+          <h1 
+            className="login__title" 
+            onClick={() => setShowInfo(!showInfo)}
+          >
+            CANERIS
+          </h1>
+        </div>
 
         {/* Source Tabs - subtle */}
         <div className="login__tabs">

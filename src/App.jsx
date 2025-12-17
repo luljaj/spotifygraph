@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import { useSpotifyAuth } from './hooks/useSpotifyAuth'
 import { useSpotifyData } from './hooks/useSpotifyData'
 import { useLastFmData } from './hooks/useLastFmData'
 import Login from './components/Login'
+import Info from './components/Info'
 import SpotifyGraph from './components/SpotifyGraph'
 import ToolsPanel from './components/ToolsPanel'
 import ArtistDetails from './components/ArtistDetails'
@@ -227,24 +229,32 @@ function App() {
   return (
     <div className={appClasses}>
       <Starfield cameraOffset={cameraOffset} />
-      {renderContent()}
+      
+      <Routes>
+        <Route path="/info" element={<Info />} />
+        <Route path="*" element={
+          <>
+            {renderContent()}
 
-      {showSettings && (
-        <ToolsPanel
-          settings={graphSettings}
-          onSettingsChange={setGraphSettings}
-          showGenreLabels={showGenreLabels}
-          onToggleGenreLabels={() => setShowGenreLabels(!showGenreLabels)}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
+            {showSettings && (
+              <ToolsPanel
+                settings={graphSettings}
+                onSettingsChange={setGraphSettings}
+                showGenreLabels={showGenreLabels}
+                onToggleGenreLabels={() => setShowGenreLabels(!showGenreLabels)}
+                onClose={() => setShowSettings(false)}
+              />
+            )}
 
-      {selectedArtist && (
-        <ArtistDetails
-          artist={selectedArtist}
-          onClose={() => setSelectedArtist(null)}
-        />
-      )}
+            {selectedArtist && (
+              <ArtistDetails
+                artist={selectedArtist}
+                onClose={() => setSelectedArtist(null)}
+              />
+            )}
+          </>
+        } />
+      </Routes>
       
       <Analytics />
     </div>

@@ -1,3 +1,15 @@
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
 .login {
   height: 100%;
   width: 100%;
@@ -21,6 +33,40 @@
   gap: var(--spacing-xl);
 }
 
+/* Title wrapper */
+.login__title-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Info link - appears above title */
+.login__info-link {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: 
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    color 0.2s ease;
+}
+
+.login__info-link--visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.login__info-link:hover {
+  color: var(--color-text-secondary);
+}
+
 /* Title - elegant serif */
 .login__title {
   font-family: 'Cormorant Garamond', Georgia, serif;
@@ -30,6 +76,15 @@
   color: #f0f0f5;
   text-shadow: 0 0 60px rgba(29, 185, 84, 0.2);
   margin-right: -0.3em; /* Compensate for letter-spacing on last letter */
+  cursor: pointer;
+  transition: text-shadow 0.3s ease;
+  opacity: 0;
+  animation: scaleIn 0.6s ease forwards;
+  animation-delay: 0.35s;
+}
+
+.login__title:hover {
+  text-shadow: 0 0 80px rgba(29, 185, 84, 0.35);
 }
 
 /* Source Tabs - minimal */
