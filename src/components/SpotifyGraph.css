@@ -136,6 +136,15 @@
   margin-top: 2px;
 }
 
+.node-tooltip__hint {
+  font-size: 0.65rem;
+  color: rgba(168, 85, 247, 0.8);
+  font-style: italic;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Graph statistics overlay */
 .graph-stats {
   position: absolute;
@@ -175,4 +184,44 @@
   );
   pointer-events: none;
   z-index: 2;
+}
+
+/* ========== MOBILE RESPONSIVE STYLES ========== */
+@media (max-width: 768px) {
+  /* Hide cluster labels on mobile - they take too much space */
+  .graph-container--mobile .cluster-labels {
+    display: none;
+  }
+  
+  /* Move tooltip to safe area at bottom */
+  .node-tooltip {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    max-width: calc(100% - 32px);
+    padding: 10px 16px;
+  }
+  
+  .node-tooltip__name {
+    font-size: 1rem;
+  }
+  
+  .node-tooltip__genres {
+    font-size: 0.7rem;
+    text-align: center;
+  }
+  
+  /* Hide graph stats on mobile */
+  .graph-stats {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .node-tooltip {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    padding: 8px 14px;
+  }
+  
+  .node-tooltip__name {
+    font-size: 0.9rem;
+  }
 }

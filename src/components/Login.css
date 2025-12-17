@@ -215,8 +215,72 @@
   line-height: 1;
 }
 
-/* Responsive */
+/* ========== MOBILE RESPONSIVE STYLES ========== */
+@media (max-width: 768px) {
+  .login {
+    /* Account for safe areas */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  
+  .login__content {
+    padding: var(--spacing-xl);
+    gap: var(--spacing-lg);
+    /* Center content with bottom weighting for thumb reach */
+    justify-content: center;
+    padding-bottom: 15vh;
+  }
+  
+  /* Tabs - larger touch targets */
+  .login__tabs {
+    gap: var(--spacing-lg);
+  }
+  
+  .login__tab {
+    min-height: 44px;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  /* Input - larger for comfortable typing */
+  .login__input-wrapper {
+    max-width: 320px;
+  }
+  
+  .login__input {
+    min-height: 52px;
+    font-size: 1rem;
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+  
+  /* Button - larger touch target */
+  .login__button {
+    min-height: 52px;
+    min-width: 200px;
+    padding: var(--spacing-md) var(--spacing-2xl);
+    font-size: 1rem;
+  }
+  
+  /* Prevent hover effects on touch devices */
+  .login__button:hover {
+    transform: none;
+  }
+  
+  .login__button:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
 @media (max-width: 480px) {
+  .login__content {
+    padding: var(--spacing-lg);
+    padding-bottom: 12vh;
+  }
+  
   .login__title {
     letter-spacing: 0.2em;
     margin-right: -0.2em;
@@ -230,5 +294,14 @@
   
   .login__etymology-divider {
     display: none;
+  }
+  
+  .login__button {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .login__input-wrapper {
+    max-width: 100%;
   }
 }

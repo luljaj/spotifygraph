@@ -1,13 +1,17 @@
-.tools-panel {
+/* Wrapper - transparent on desktop, backdrop on mobile */
+.tools-panel-wrapper {
   position: absolute;
   top: 80px;
   right: var(--spacing-lg);
+  z-index: 100;
+}
+
+.tools-panel {
   background: rgba(10, 10, 20, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-lg);
   backdrop-filter: blur(16px);
   overflow: hidden;
-  z-index: 100;
   min-width: 240px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
@@ -15,6 +19,11 @@
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.4),
     0 0 60px rgba(99, 102, 241, 0.08);
+}
+
+/* Drag handle - hidden on desktop */
+.tools-panel__drag-handle {
+  display: none;
 }
 
 @keyframes slideInPanel {
@@ -223,17 +232,96 @@
   transition: all var(--transition-fast);
 }
 
-/* Responsive */
+/* ========== MOBILE BOTTOM SHEET ========== */
 @media (max-width: 768px) {
-  .tools-panel {
+  /* Wrapper becomes full-screen backdrop */
+  .tools-panel-wrapper {
     position: fixed;
-    top: auto;
-    bottom: var(--spacing-lg);
-    right: var(--spacing-md);
-    left: var(--spacing-md);
-    transform: none;
-    max-height: 50vh;
+    inset: 0;
+    top: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: flex-end;
+    animation: fadeIn 0.2s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  /* Panel becomes bottom sheet */
+  .tools-panel {
+    width: 100%;
+    max-height: 60vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    animation: slideUpSheet 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  @keyframes slideUpSheet {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Show drag handle on mobile */
+  .tools-panel__drag-handle {
+    display: flex;
+    justify-content: center;
+    padding: var(--spacing-sm) 0;
+    cursor: grab;
+  }
+  
+  .tools-panel__drag-bar {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-full);
+  }
+  
+  /* Larger close button for touch */
+  .tools-panel__close {
+    width: 44px;
+    height: 44px;
+  }
+  
+  /* Larger toggle switches for touch */
+  .toggle__switch {
+    width: 44px;
+    height: 24px;
+  }
+  
+  .toggle__slider::before {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .toggle__switch input:checked + .toggle__slider::before {
+    transform: translateX(20px);
+  }
+  
+  /* Larger slider thumbs for touch */
+  .slider input[type="range"] {
+    height: 8px;
+  }
+  
+  .slider input[type="range"]::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .slider input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
   }
 }
-
 

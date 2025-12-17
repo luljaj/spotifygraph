@@ -119,3 +119,38 @@ a {
   text-decoration: none;
 }
 
+/* ========== MOBILE TOUCH OPTIMIZATION ========== */
+@media (max-width: 768px) {
+  /* Ensure minimum touch target size for all interactive elements */
+  button,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Add touch-action for better touch performance */
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+  
+  /* Prevent text selection on interactive elements */
+  button,
+  a,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Increase tap highlight for feedback */
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.8;
+  }
+}
+

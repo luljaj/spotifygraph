@@ -4,7 +4,14 @@ import { forceCenter, forceX, forceY } from 'd3-force'
 import { calculateClusterCenters } from '../utils/graphUtils'
 import './SpotifyGraph.css'
 
-function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraChange }) {
+function SpotifyGraph({ 
+  data, 
+  onNodeClick, 
+  showGenreLabels, 
+  settings, 
+  onCameraChange,
+  isMobile 
+}) {
   const graphRef = useRef()
   const containerRef = useRef()
   const imageCache = useRef({})
@@ -13,6 +20,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const [hoveredNode, setHoveredNode] = useState(null)
   const [hoveredLink, setHoveredLink] = useState(null)
+  const [selectedNode, setSelectedNode] = useState(null) // Mobile: tap-to-select node
   const [clusterCenters, setClusterCenters] = useState([])
   const [graphBounds, setGraphBounds] = useState(null) // Track graph extent for dynamic zoom limits
 
@@ -121,7 +129,8 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
     
     const baseSize = (node.val || 5) * nodeScale
     const size = Math.max(6, baseSize)
-    const isHovered = hoveredNode?.id === node.id
+    // On mobile, use selectedNode for hover effect; on desktop use hoveredNode
+    const isHovered = hoveredNode?.id === node.id || selectedNode?.id === node.id
     
     // Get node color with cosmic tint
     const nodeColor = node.color || '#6366f1'
@@ -223,7 +232,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
       ctx.fillStyle = '#ffffff'
       ctx.fillText(label, node.x, labelY + 2)
     }
-  }, [hoveredNode, nodeScale])
+  }, [hoveredNode, selectedNode, nodeScale])
 
   // Custom link rendering - simple constellation lines with subtle hover highlight
   const linkCanvasObject = useCallback((link, ctx) => {
@@ -232,10 +241,12 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
     
     if (!start.x || !end.x) return
     
-    // Check if this link is hovered
+    // Check if this link is hovered or connected to selected node (mobile)
     const isHovered = hoveredLink === link || 
       hoveredNode?.id === start.id || 
-      hoveredNode?.id === end.id
+      hoveredNode?.id === end.id ||
+      selectedNode?.id === start.id ||
+      selectedNode?.id === end.id
     
     // Simple hover effect - just brighter and slightly thicker
     if (isHovered) {
@@ -263,7 +274,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
       ctx.lineWidth = 0.5
       ctx.stroke()
     }
-  }, [hoveredNode, hoveredLink])
+  }, [hoveredNode, hoveredLink, selectedNode])
 
   // Handle node hover
   const handleNodeHover = useCallback((node) => {
@@ -278,14 +289,26 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
     setHoveredLink(link)
   }, [])
 
-  // Handle node click
+  // Handle node click - different behavior for mobile vs desktop
   const handleNodeClick = useCallback((node) => {
-    if (node && onNodeClick) {
-      onNodeClick(node)
+    if (!node) return
+    
+    if (isMobile) {
+      // Mobile: tap-to-select, double-tap to open modal
+      if (selectedNode?.id === node.id) {
+        // Same node tapped again - open modal
+        onNodeClick?.(node)
+        setSelectedNode(null) // Clear selection after opening modal
+      } else {
+        // Different node or first tap - just select it (shows hover effect)
+        setSelectedNode(node)
+      }
+    } else {
+      // Desktop: click opens modal immediately
+      onNodeClick?.(node)
     }
-  }, [onNodeClick])
+  }, [onNodeClick, isMobile, selectedNode])
 
-  // Handle zoom/pan to update parallax
   // Handle zoom/pan to update parallax starfield
   const handleZoom = useCallback((transform) => {
     cameraOffset.current = {
@@ -298,6 +321,13 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
       onCameraChange({ x: transform.x, y: transform.y })
     }
   }, [onCameraChange])
+
+  // Handle background click to deselect on mobile
+  const handleBackgroundClick = useCallback(() => {
+    if (isMobile && selectedNode) {
+      setSelectedNode(null)
+    }
+  }, [isMobile, selectedNode])
 
   // Zoom to fit on load
   useEffect(() => {
@@ -390,8 +420,15 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
     }
   }, [data.nodes.length, graphBounds, dimensions]) // Re-attach when bounds or dimensions change
 
+  // Container classes
+  const containerClasses = [
+    'graph-container',
+    'cosmic-theme',
+    isMobile && 'graph-container--mobile'
+  ].filter(Boolean).join(' ')
+
   return (
-    <div className="graph-container cosmic-theme" ref={containerRef}>
+    <div className={containerClasses} ref={containerRef}>
       <ForceGraph2D
         ref={graphRef}
         width={dimensions.width}
@@ -402,6 +439,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
         onNodeHover={handleNodeHover}
         onLinkHover={handleLinkHover}
         onNodeClick={handleNodeClick}
+        onBackgroundClick={handleBackgroundClick}
         onZoom={handleZoom}
         nodeLabel={() => null}
         linkDirectionalParticles={0}
@@ -412,7 +450,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
         backgroundColor="transparent"
         nodeRelSize={1}
         enableNodeDrag={true}
-        enableZoomInteraction={false}
+        enableZoomInteraction={isMobile} // Enable native zoom on mobile for pinch-to-zoom
         enablePanInteraction={true}
         minZoom={0.1}
         maxZoom={8}
@@ -436,19 +474,23 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraCh
       )}
       
 
-      {/* Hover tooltip at bottom */}
-      {hoveredNode && (
+      {/* Hover tooltip at bottom - show for hovered (desktop) or selected (mobile) node */}
+      {(hoveredNode || selectedNode) && (
         <div className="node-tooltip cosmic-tooltip">
-          <span className="node-tooltip__name">{hoveredNode.name}</span>
-          {hoveredNode.genres?.length > 0 && (
+          <span className="node-tooltip__name">{(hoveredNode || selectedNode).name}</span>
+          {(hoveredNode || selectedNode).genres?.length > 0 && (
             <span className="node-tooltip__genres">
-              {hoveredNode.genres.slice(0, 3).join(' • ')}
+              {(hoveredNode || selectedNode).genres.slice(0, 3).join(' • ')}
             </span>
           )}
-          {hoveredNode.playcount && (
+          {(hoveredNode || selectedNode).playcount && (
             <span className="node-tooltip__playcount">
-              {formatPlaycount(hoveredNode.playcount)} plays
+              {formatPlaycount((hoveredNode || selectedNode).playcount)} plays
             </span>
+          )}
+          {/* Mobile hint to tap again */}
+          {isMobile && selectedNode && !hoveredNode && (
+            <span className="node-tooltip__hint">Tap again to view details</span>
           )}
         </div>
       )}

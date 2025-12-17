@@ -20,6 +20,9 @@ const DEFAULT_SETTINGS = {
   showAllLabels: true
 }
 
+// Mobile breakpoint
+const MOBILE_BREAKPOINT = 768
+
 function App() {
   // Data source state
   const [dataSource, setDataSource] = useState(null) // 'spotify' | 'lastfm' | null
@@ -44,6 +47,9 @@ function App() {
   const [graphSettings, setGraphSettings] = useState(DEFAULT_SETTINGS)
   const [showSettings, setShowSettings] = useState(false)
   const [cameraOffset, setCameraOffset] = useState({ x: 0, y: 0 })
+  
+  // Mobile detection for responsive styling
+  const [isMobile, setIsMobile] = useState(false)
 
   // Set data source to spotify when returning from OAuth with token
   // Using useEffect instead of setting state during render
@@ -52,6 +58,16 @@ function App() {
       setDataSource('spotify')
     }
   }, [token, dataSource])
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Handle Spotify login
   const handleSpotifyLogin = () => {
@@ -139,10 +155,16 @@ function App() {
       )
     }
 
+    // Header classes for mobile styling
+    const headerClasses = [
+      'header',
+      isMobile && 'header--mobile'
+    ].filter(Boolean).join(' ')
+
     // Main app content
     return (
       <>
-        <header className="header">
+        <header className={headerClasses}>
           <div className="header__brand">
             <h1 className="header__title">CANERIS</h1>
           </div>
@@ -159,13 +181,23 @@ function App() {
                     <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
                   </svg>
                 </button>
-                <button className="btn btn--ghost" onClick={exportData}>
-                  Export
+                <button className="btn btn--ghost btn--ghost-icon" onClick={exportData} title="Export">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7,10 12,15 17,10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span className="btn__label">Export</span>
                 </button>
               </>
             )}
-            <button className="btn btn--ghost" onClick={handleLogout}>
-              Logout
+            <button className="btn btn--ghost btn--ghost-icon" onClick={handleLogout} title="Logout">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              <span className="btn__label">Logout</span>
             </button>
           </div>
         </header>
@@ -183,6 +215,7 @@ function App() {
               showGenreLabels={showGenreLabels}
               settings={graphSettings}
               onCameraChange={setCameraOffset}
+              isMobile={isMobile}
             />
           )}
         </main>
