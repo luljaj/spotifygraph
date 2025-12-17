@@ -28,6 +28,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
   const [hoveredLink, setHoveredLink] = useState(null)
   const [clusterCenters, setClusterCenters] = useState([])
   const [spatialLabels, setSpatialLabels] = useState([])
+  const [graphBounds, setGraphBounds] = useState(null) // Track graph extent for dynamic zoom limits
 
   // Default settings
   const {
@@ -178,7 +179,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     linkGlowStates.current = {}
   }, [data.links])
 
-  // Update cluster centers and spatial labels after graph simulation
+  // Update cluster centers, spatial labels, and graph bounds after simulation
   useEffect(() => {
     if (graphRef.current && data.genreClusters?.length > 0) {
       const timer = setTimeout(() => {
@@ -188,6 +189,22 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
         // Calculate spatial genre labels for floating overlay
         const labels = calculateSpatialGenreLabels(data.nodes)
         setSpatialLabels(labels)
+        
+        // Calculate graph bounds for dynamic zoom limits
+        const xs = data.nodes.filter(n => Number.isFinite(n.x)).map(n => n.x)
+        const ys = data.nodes.filter(n => Number.isFinite(n.y)).map(n => n.y)
+        
+        if (xs.length > 0 && ys.length > 0) {
+          const padding = 100 // Extra padding around graph
+          setGraphBounds({
+            minX: Math.min(...xs) - padding,
+            maxX: Math.max(...xs) + padding,
+            minY: Math.min(...ys) - padding,
+            maxY: Math.max(...ys) + padding,
+            width: Math.max(...xs) - Math.min(...xs) + padding * 2,
+            height: Math.max(...ys) - Math.min(...ys) + padding * 2
+          })
+        }
       }, 2000)
       return () => clearTimeout(timer)
     }
@@ -481,7 +498,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     }
   }, [data.nodes.length])
 
-  // Smooth zoom handling
+  // Smooth zoom handling with dynamic min zoom based on graph bounds
   useEffect(() => {
     if (!containerRef.current || !graphRef.current) return
     
@@ -492,8 +509,27 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     
     const ZOOM_SPEED = 0.15 // How much to zoom per scroll step
     const SMOOTH_FACTOR = 0.12 // Smoothing factor (lower = smoother but slower)
-    const MIN_ZOOM = 0.1
     const MAX_ZOOM = 8
+    const ABSOLUTE_MIN_ZOOM = 0.05 // Never go below this
+    const ZOOM_OUT_PADDING = 0.7 // How much smaller than "fit" we allow (0.7 = 70% of fit)
+    
+    // Calculate dynamic min zoom based on graph bounds and viewport
+    const getMinZoom = () => {
+      if (!graphBounds || graphBounds.width === 0 || graphBounds.height === 0) {
+        return 0.1 // Default fallback
+      }
+      
+      // Calculate zoom level needed to fit entire graph in viewport
+      const fitZoomX = dimensions.width / graphBounds.width
+      const fitZoomY = dimensions.height / graphBounds.height
+      const fitZoom = Math.min(fitZoomX, fitZoomY)
+      
+      // Allow zooming out a bit past "fit" for breathing room, but not infinitely
+      const dynamicMin = fitZoom * ZOOM_OUT_PADDING
+      
+      // Clamp between absolute minimum and a reasonable threshold
+      return Math.max(ABSOLUTE_MIN_ZOOM, Math.min(dynamicMin, 0.5))
+    }
     
     const animateZoom = () => {
       const diff = targetZoom - currentZoom
@@ -520,9 +556,11 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
       // Prevent default browser zoom
       e.preventDefault()
       
+      const minZoom = getMinZoom()
+      
       // Calculate new target zoom based on scroll direction
       const zoomDelta = e.deltaY > 0 ? -ZOOM_SPEED : ZOOM_SPEED
-      targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom * (1 + zoomDelta)))
+      targetZoom = Math.max(minZoom, Math.min(MAX_ZOOM, targetZoom * (1 + zoomDelta)))
       
       // Start animation if not already running
       if (!animationId) {
@@ -539,7 +577,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
         cancelAnimationFrame(animationId)
       }
     }
-  }, [data.nodes.length]) // Re-attach after graph loads
+  }, [data.nodes.length, graphBounds, dimensions]) // Re-attach when bounds or dimensions change
 
   return (
     <div className="graph-container cosmic-theme" ref={containerRef}>
