@@ -6,24 +6,8 @@
 }
 
 .graph-container.cosmic-theme {
-  background: #050510;
-}
-
-/* Starfield canvas - positioned behind the graph */
-.starfield-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Ensure force graph is above starfield */
-.graph-container canvas:not(.starfield-canvas) {
-  position: relative;
-  z-index: 1;
+  /* Transparent to show shared Starfield component behind */
+  background: transparent;
 }
 
 .graph-container canvas {
@@ -174,22 +158,6 @@
 .graph-stats__value {
   color: rgba(147, 197, 253, 0.9);
   font-weight: 500;
-}
-
-/* Cosmic ambient effects */
-.graph-container.cosmic-theme::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* Vignette effect */

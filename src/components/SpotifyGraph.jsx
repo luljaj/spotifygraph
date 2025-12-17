@@ -4,23 +4,10 @@ import { forceCenter, forceX, forceY } from 'd3-force'
 import { calculateClusterCenters, calculateSpatialGenreLabels } from '../utils/graphUtils'
 import './SpotifyGraph.css'
 
-// Starfield configuration
-const STAR_COUNT = 250
-const TWINKLE_SPEED = 0.02
-const PARALLAX_STRENGTH = 0.15 // How much stars move relative to camera
-
-// Link glow animation configuration
-const GLOW_FADE_IN_SPEED = 0.08
-const GLOW_FADE_OUT_SPEED = 0.12
-
-function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
+function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings, onCameraChange }) {
   const graphRef = useRef()
   const containerRef = useRef()
-  const starfieldRef = useRef()
-  const starsRef = useRef([])
-  const animationRef = useRef()
   const imageCache = useRef({})
-  const linkGlowStates = useRef({}) // Track glow intensity for each link
   const cameraOffset = useRef({ x: 0, y: 0, k: 1 }) // Track camera position
   
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
@@ -37,109 +24,21 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     linkDistance = 50,
   } = settings || {}
 
-  // Generate stars with depth layers for parallax
-  const generateStars = useCallback((width, height) => {
-    const stars = []
-    for (let i = 0; i < STAR_COUNT; i++) {
-      // Depth layer: 0 = far (slow parallax), 1 = near (fast parallax)
-      const depth = Math.random()
-      stars.push({
-        baseX: Math.random() * width * 1.5 - width * 0.25, // Wider area for parallax
-        baseY: Math.random() * height * 1.5 - height * 0.25,
-        radius: 0.5 + depth * 1.2, // Nearer stars are bigger
-        opacity: 0.3 + depth * 0.7, // Nearer stars are brighter
-        depth: depth,
-        twinkleOffset: Math.random() * Math.PI * 2,
-        twinkleSpeed: (Math.random() * 0.5 + 0.5) * TWINKLE_SPEED
-      })
-    }
-    // Sort by depth so far stars render first
-    return stars.sort((a, b) => a.depth - b.depth)
-  }, [])
-
-  // Initialize starfield with parallax
-  useEffect(() => {
-    if (!starfieldRef.current) return
-    
-    const canvas = starfieldRef.current
-    const ctx = canvas.getContext('2d')
-    
-    starsRef.current = generateStars(dimensions.width, dimensions.height)
-    
-    let time = 0
-    const animate = () => {
-      ctx.fillStyle = '#050510'
-      ctx.fillRect(0, 0, dimensions.width, dimensions.height)
-      
-      const { x: camX, y: camY } = cameraOffset.current
-      const centerX = dimensions.width / 2
-      const centerY = dimensions.height / 2
-      
-      // Draw stars with twinkling and parallax
-      starsRef.current.forEach(star => {
-        const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset) * 0.5 + 0.5
-        const opacity = star.opacity * twinkle * 0.8 + 0.2
-        
-        // Apply parallax based on depth - stars move WITH camera (same direction)
-        // Deeper stars (low depth) move less, nearer stars move more
-        const parallaxFactor = star.depth * PARALLAX_STRENGTH
-        const starX = star.baseX + (camX - centerX) * parallaxFactor
-        const starY = star.baseY + (camY - centerY) * parallaxFactor
-        
-        // Wrap stars around screen edges for seamless effect
-        const wrappedX = ((starX % dimensions.width) + dimensions.width) % dimensions.width
-        const wrappedY = ((starY % dimensions.height) + dimensions.height) % dimensions.height
-        
-        ctx.beginPath()
-        ctx.arc(wrappedX, wrappedY, star.radius, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`
-        ctx.fill()
-        
-        // Add subtle glow to brighter/nearer stars
-        if (star.radius > 1.2) {
-          ctx.beginPath()
-          ctx.arc(wrappedX, wrappedY, star.radius * 2, 0, Math.PI * 2)
-          const gradient = ctx.createRadialGradient(
-            wrappedX, wrappedY, 0,
-            wrappedX, wrappedY, star.radius * 2
-          )
-          gradient.addColorStop(0, `rgba(200, 220, 255, ${opacity * 0.3})`)
-          gradient.addColorStop(1, 'rgba(200, 220, 255, 0)')
-          ctx.fillStyle = gradient
-          ctx.fill()
-        }
-      })
-      
-      time++
-      animationRef.current = requestAnimationFrame(animate)
-    }
-    
-    animate()
-    
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
-    }
-  }, [dimensions, generateStars])
-
   // Handle window resize
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
-        const newDimensions = {
+        setDimensions({
           width: containerRef.current.clientWidth,
           height: containerRef.current.clientHeight
-        }
-        setDimensions(newDimensions)
-        starsRef.current = generateStars(newDimensions.width, newDimensions.height)
+        })
       }
     }
 
     updateDimensions()
     window.addEventListener('resize', updateDimensions)
     return () => window.removeEventListener('resize', updateDimensions)
-  }, [generateStars])
+  }, [])
 
   // Preload images for nodes with proper cleanup and cache eviction
   useEffect(() => {
@@ -173,11 +72,6 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
       })
     }
   }, [data.nodes])
-
-  // Clear linkGlowStates when links change to prevent memory buildup
-  useEffect(() => {
-    linkGlowStates.current = {}
-  }, [data.links])
 
   // Update cluster centers, spatial labels, and graph bounds after simulation
   useEffect(() => {
@@ -295,23 +189,12 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     
     ctx.restore()
     
-    // Add subtle ring/border
+    // Add subtle ring/border (scales with node size)
     ctx.beginPath()
     ctx.arc(node.x, node.y, size, 0, Math.PI * 2)
-    ctx.strokeStyle = isHovered ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.15)'
-    ctx.lineWidth = isHovered ? 2 : 0.5
+    ctx.strokeStyle = isHovered ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.15)'
+    ctx.lineWidth = isHovered ? Math.max(1.5, size * 0.1) : 0.5
     ctx.stroke()
-    
-    // Draw hover halo rings
-    if (isHovered) {
-      for (let i = 1; i <= 2; i++) {
-        ctx.beginPath()
-        ctx.arc(node.x, node.y, size + (i * 4), 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 - i * 0.1})`
-        ctx.lineWidth = 1
-        ctx.stroke()
-      }
-    }
     
     // Draw name label on hover
     if (isHovered) {
@@ -347,67 +230,42 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     }
   }, [hoveredNode, nodeScale])
 
-  // Custom link rendering - constellation lines with fading glow
+  // Custom link rendering - simple constellation lines with subtle hover highlight
   const linkCanvasObject = useCallback((link, ctx) => {
     const start = link.source
     const end = link.target
     
     if (!start.x || !end.x) return
     
-    // Create unique link ID for tracking glow state
-    const linkId = `${link.source.id || link.source}-${link.target.id || link.target}`
-    
-    // Check if this link should be glowing
+    // Check if this link is hovered
     const isHovered = hoveredLink === link || 
       hoveredNode?.id === start.id || 
       hoveredNode?.id === end.id
     
-    // Get current glow intensity (0 to 1)
-    let glowIntensity = linkGlowStates.current[linkId] || 0
-    
-    // Animate glow intensity
+    // Simple hover effect - just brighter and slightly thicker
     if (isHovered) {
-      // Fade in
-      glowIntensity = Math.min(1, glowIntensity + GLOW_FADE_IN_SPEED)
-    } else {
-      // Fade out
-      glowIntensity = Math.max(0, glowIntensity - GLOW_FADE_OUT_SPEED)
-    }
-    linkGlowStates.current[linkId] = glowIntensity
-    
-    // Calculate visual properties based on glow intensity
-    const baseOpacity = 0.06 + glowIntensity * 0.7
-    const lineWidth = 0.5 + glowIntensity * 1.5
-    
-    // Color transition from dark gray to white
-    const r = Math.round(80 + glowIntensity * 175)
-    const g = Math.round(100 + glowIntensity * 155)
-    const b = Math.round(130 + glowIntensity * 125)
-    
-    // Draw the main line
-    ctx.beginPath()
-    ctx.moveTo(start.x, start.y)
-    ctx.lineTo(end.x, end.y)
-    ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${baseOpacity})`
-    ctx.lineWidth = lineWidth
-    ctx.stroke()
-    
-    // Draw outer glow when there's any glow intensity
-    if (glowIntensity > 0.01) {
-      // Outer soft glow
+      // Subtle glow layer behind
       ctx.beginPath()
       ctx.moveTo(start.x, start.y)
       ctx.lineTo(end.x, end.y)
-      ctx.strokeStyle = `rgba(150, 180, 255, ${glowIntensity * 0.25})`
-      ctx.lineWidth = 6 * glowIntensity
+      ctx.strokeStyle = 'rgba(150, 180, 255, 0.12)'
+      ctx.lineWidth = 3
       ctx.stroke()
       
-      // Inner bright glow
+      // Main bright line
       ctx.beginPath()
       ctx.moveTo(start.x, start.y)
       ctx.lineTo(end.x, end.y)
-      ctx.strokeStyle = `rgba(200, 220, 255, ${glowIntensity * 0.15})`
-      ctx.lineWidth = 10 * glowIntensity
+      ctx.strokeStyle = 'rgba(200, 220, 255, 0.45)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+    } else {
+      // Default subtle constellation line
+      ctx.beginPath()
+      ctx.moveTo(start.x, start.y)
+      ctx.lineTo(end.x, end.y)
+      ctx.strokeStyle = 'rgba(80, 100, 130, 0.08)'
+      ctx.lineWidth = 0.5
       ctx.stroke()
     }
   }, [hoveredNode, hoveredLink])
@@ -433,13 +291,18 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
   }, [onNodeClick])
 
   // Handle zoom/pan to update parallax
+  // Handle zoom/pan to update parallax starfield
   const handleZoom = useCallback((transform) => {
     cameraOffset.current = {
       x: transform.x,
       y: transform.y,
       k: transform.k
     }
-  }, [])
+    // Report camera position to parent for starfield parallax
+    if (onCameraChange) {
+      onCameraChange({ x: transform.x, y: transform.y })
+    }
+  }, [onCameraChange])
 
   // Render floating genre labels on canvas (drawn after each frame)
   const handleRenderFramePost = useCallback((ctx, globalScale) => {
@@ -581,14 +444,6 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
 
   return (
     <div className="graph-container cosmic-theme" ref={containerRef}>
-      {/* Starfield background canvas */}
-      <canvas
-        ref={starfieldRef}
-        className="starfield-canvas"
-        width={dimensions.width}
-        height={dimensions.height}
-      />
-      
       <ForceGraph2D
         ref={graphRef}
         width={dimensions.width}

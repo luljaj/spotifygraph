@@ -37,45 +37,22 @@
 .header__brand {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.header__logo {
-  filter: drop-shadow(var(--shadow-glow));
 }
 
 .header__title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: #f0f0f5;
+  margin: 0;
+  margin-right: -0.2em; /* Compensate for letter-spacing on last letter */
 }
 
 .header__actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-}
-
-.header__source {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--source-color, var(--color-accent));
-  background: color-mix(in srgb, var(--source-color, var(--color-accent)) 15%, transparent);
-  border-radius: var(--radius-full);
-  margin-left: var(--spacing-sm);
-}
-
-.header__username {
-  font-weight: 400;
-  opacity: 0.8;
 }
 
 /* Main */

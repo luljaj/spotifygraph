@@ -6,49 +6,7 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: #050510;
-}
-
-/* Starfield */
-.login__stars {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.login__star {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: var(--size);
-  height: var(--size);
-  background: #fff;
-  border-radius: 50%;
-  opacity: var(--opacity);
-  animation: twinkle var(--duration) ease-in-out infinite;
-  animation-delay: var(--delay);
-}
-
-@keyframes twinkle {
-  0%, 100% { 
-    opacity: var(--opacity); 
-    transform: scale(1);
-  }
-  50% { 
-    opacity: calc(var(--opacity) * 0.3); 
-    transform: scale(0.8);
-  }
-}
-
-/* Subtle nebula glow - matching cosmic theme */
-.login__nebula {
-  position: absolute;
-  inset: 0;
-  background: 
-    radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 60%);
-  pointer-events: none;
+  background: transparent;
 }
 
 /* Content */
@@ -226,7 +184,7 @@
   transform: none;
 }
 
-/* Etymology - the elegant touch */
+/* Etymology*/
 .login__etymology {
   display: flex;
   align-items: center;

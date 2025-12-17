@@ -1,46 +1,9 @@
-.starfield {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+.starfield-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 0;
 }
-
-.starfield__stars {
-  position: absolute;
-  inset: 0;
-}
-
-.starfield__star {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: var(--size);
-  height: var(--size);
-  background: #fff;
-  border-radius: 50%;
-  opacity: var(--opacity);
-  animation: starfield-twinkle var(--duration) ease-in-out infinite;
-  animation-delay: var(--delay);
-}
-
-@keyframes starfield-twinkle {
-  0%, 100% { 
-    opacity: var(--opacity); 
-    transform: scale(1);
-  }
-  50% { 
-    opacity: calc(var(--opacity) * 0.3); 
-    transform: scale(0.8);
-  }
-}
-
-.starfield__nebula {
-  position: absolute;
-  inset: 0;
-  background: 
-    radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 60%);
-}
-
