@@ -7,7 +7,7 @@ import SpotifyGraph from './components/SpotifyGraph'
 import ToolsPanel from './components/ToolsPanel'
 import ArtistDetails from './components/ArtistDetails'
 import Starfield from './components/Starfield'
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 import './App.css'
 
 // Default graph settings
@@ -212,6 +212,8 @@ function App() {
           onClose={() => setSelectedArtist(null)}
         />
       )}
+      
+      <Analytics />
     </div>
   )
 }
