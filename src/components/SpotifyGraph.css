@@ -28,10 +28,18 @@
 
 .graph-container canvas {
   cursor: grab;
+  /* Smooth rendering hints */
+  image-rendering: auto;
+  -webkit-font-smoothing: antialiased;
 }
 
 .graph-container canvas:active {
   cursor: grabbing;
+}
+
+/* Smooth transitions for the graph container */
+.graph-container {
+  touch-action: none; /* Prevent browser handling of touch for smoother custom handling */
 }
 
 /* Cluster labels - cosmic style */

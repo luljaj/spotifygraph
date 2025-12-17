@@ -25,21 +25,81 @@ export function artistsToGraphData(artists) {
     color: null
   }))
 
-  // Create edges based on shared genres
-  const links = []
+  // Create edges based on shared genres - ensuring graph connectivity
+  const MAX_CONNECTIONS_PER_NODE = 5
+  const allPotentialLinks = []
   
   for (let i = 0; i < allNodes.length; i++) {
     for (let j = i + 1; j < allNodes.length; j++) {
       const sharedGenres = getSharedGenres(allNodes[i].genres, allNodes[j].genres)
       
       if (sharedGenres.length > 0) {
-        links.push({
+        allPotentialLinks.push({
           source: allNodes[i].id,
           target: allNodes[j].id,
           sharedGenres,
           value: sharedGenres.length // Edge weight = number of shared genres
         })
       }
+    }
+  }
+  
+  // Sort by strength (most shared genres first) to prioritize strong connections
+  allPotentialLinks.sort((a, b) => b.value - a.value)
+  
+  // Union-Find for tracking connected components
+  const parent = {}
+  const find = (x) => {
+    if (parent[x] === undefined) parent[x] = x
+    if (parent[x] !== x) parent[x] = find(parent[x])
+    return parent[x]
+  }
+  const union = (x, y) => {
+    const px = find(x), py = find(y)
+    if (px !== py) {
+      parent[px] = py
+      return true // Merged two different components
+    }
+    return false // Already in same component
+  }
+  
+  // Track connection count per node
+  const connectionCount = {}
+  const links = []
+  const addedLinks = new Set()
+  
+  // PHASE 1: Add bridge connections that merge separate components
+  // These are critical for keeping the graph connected
+  for (const link of allPotentialLinks) {
+    const sourceCount = connectionCount[link.source] || 0
+    const targetCount = connectionCount[link.target] || 0
+    
+    // Check if this link would merge two different components
+    if (find(link.source) !== find(link.target)) {
+      // Only add if both nodes have room
+      if (sourceCount < MAX_CONNECTIONS_PER_NODE && targetCount < MAX_CONNECTIONS_PER_NODE) {
+        links.push(link)
+        addedLinks.add(`${link.source}-${link.target}`)
+        connectionCount[link.source] = sourceCount + 1
+        connectionCount[link.target] = targetCount + 1
+        union(link.source, link.target)
+      }
+    }
+  }
+  
+  // PHASE 2: Fill remaining slots with strong intra-cluster connections
+  for (const link of allPotentialLinks) {
+    // Skip if already added
+    if (addedLinks.has(`${link.source}-${link.target}`)) continue
+    
+    const sourceCount = connectionCount[link.source] || 0
+    const targetCount = connectionCount[link.target] || 0
+    
+    // Only add if both nodes have room for more connections
+    if (sourceCount < MAX_CONNECTIONS_PER_NODE && targetCount < MAX_CONNECTIONS_PER_NODE) {
+      links.push(link)
+      connectionCount[link.source] = sourceCount + 1
+      connectionCount[link.target] = targetCount + 1
     }
   }
 
@@ -190,5 +250,175 @@ export function calculateClusterCenters(nodes, clusters) {
       y: avgY
     }
   })
+}
+
+/**
+ * Calculate spatial genre regions with mixed names
+ * Each label is anchored to a specific node so it moves with the graph
+ */
+export function calculateSpatialGenreLabels(nodes, gridSize = 150) {
+  if (!nodes || nodes.length === 0) return []
+  
+  // Find bounds of the graph
+  const xs = nodes.filter(n => Number.isFinite(n.x)).map(n => n.x)
+  const ys = nodes.filter(n => Number.isFinite(n.y)).map(n => n.y)
+  
+  if (xs.length === 0 || ys.length === 0) return []
+  
+  const minX = Math.min(...xs)
+  
+  // Create grid cells
+  const cells = {}
+  
+  nodes.forEach(node => {
+    if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return
+    
+    const cellX = Math.floor((node.x - minX) / gridSize)
+    const cellY = Math.floor((node.y - minX) / gridSize)
+    const cellKey = `${cellX},${cellY}`
+    
+    if (!cells[cellKey]) {
+      cells[cellKey] = {
+        nodes: [],
+        genres: {}
+      }
+    }
+    
+    cells[cellKey].nodes.push(node)
+    node.genres.forEach(genre => {
+      cells[cellKey].genres[genre] = (cells[cellKey].genres[genre] || 0) + 1
+    })
+  })
+  
+  // Process cells to create labels
+  const labels = []
+  const usedNodeIds = new Set() // Prevent using same anchor node twice
+  
+  // Sort cells by node count to prioritize larger clusters
+  const sortedCells = Object.entries(cells)
+    .map(([key, cell]) => ({ key, ...cell }))
+    .filter(cell => cell.nodes.length >= 3)
+    .sort((a, b) => b.nodes.length - a.nodes.length)
+  
+  for (const cell of sortedCells) {
+    if (labels.length >= 12) break
+    
+    // Get top genres for this cell
+    const sortedGenres = Object.entries(cell.genres)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([genre]) => genre)
+    
+    if (sortedGenres.length === 0) continue
+    
+    // Find the best anchor node - prefer larger nodes (higher val) that aren't already used
+    const dominantGenre = sortedGenres[0]
+    const eligibleNodes = cell.nodes
+      .filter(n => !usedNodeIds.has(n.id) && n.genres.includes(dominantGenre))
+      .sort((a, b) => (b.val || 0) - (a.val || 0))
+    
+    if (eligibleNodes.length === 0) continue
+    
+    const anchorNode = eligibleNodes[0]
+    usedNodeIds.add(anchorNode.id)
+    
+    // Check distance from existing labels (using anchor nodes)
+    const tooClose = labels.some(existing => {
+      const existingAnchor = existing.anchorNode
+      if (!existingAnchor) return false
+      const dist = Math.sqrt(
+        Math.pow(anchorNode.x - existingAnchor.x, 2) + 
+        Math.pow(anchorNode.y - existingAnchor.y, 2)
+      )
+      return dist < gridSize * 1.2
+    })
+    
+    if (tooClose) continue
+    
+    // Generate mixed genre name
+    const mixedName = generateMixedGenreName(sortedGenres)
+    
+    labels.push({
+      id: cell.key,
+      name: mixedName,
+      anchorNodeId: anchorNode.id,
+      anchorNode: anchorNode, // Direct reference for position tracking
+      nodeCount: cell.nodes.length,
+      color: anchorNode.color || '#6366f1',
+      genres: sortedGenres
+    })
+  }
+  
+  return labels
+}
+
+/**
+ * Generate a creative mixed genre name from multiple genres
+ */
+function generateMixedGenreName(genres) {
+  if (genres.length === 0) return 'Unknown'
+  if (genres.length === 1) return formatGenreName(genres[0])
+  
+  // Extract meaningful parts from genre names
+  const parts = genres.map(g => {
+    // Split genre into words
+    const words = g.toLowerCase().split(/[\s-]+/)
+    return { full: g, words }
+  })
+  
+  // Common genre modifiers to potentially combine
+  const modifiers = ['indie', 'alt', 'alternative', 'modern', 'neo', 'post', 'new', 'dark', 'lo-fi', 'experimental', 'progressive', 'psychedelic', 'classic', 'deep', 'tropical', 'melodic', 'hard', 'soft']
+  const coreGenres = ['rock', 'pop', 'hip hop', 'rap', 'electronic', 'edm', 'house', 'techno', 'jazz', 'soul', 'r&b', 'metal', 'punk', 'folk', 'country', 'blues', 'classical', 'ambient', 'wave', 'core', 'trap', 'bass', 'dance']
+  
+  // Try to find a modifier and a core genre
+  let foundModifier = null
+  let foundCore = null
+  let uniqueDescriptor = null
+  
+  for (const part of parts) {
+    for (const word of part.words) {
+      if (!foundModifier && modifiers.includes(word)) {
+        foundModifier = word
+      }
+      if (!foundCore && coreGenres.some(c => c.includes(word) || word.includes(c.split(' ')[0]))) {
+        foundCore = word
+      }
+      // Look for unique descriptors that aren't common modifiers or cores
+      if (!uniqueDescriptor && !modifiers.includes(word) && !coreGenres.some(c => c.includes(word))) {
+        if (word.length > 3) {
+          uniqueDescriptor = word
+        }
+      }
+    }
+  }
+  
+  // Build the mixed name
+  let result = ''
+  
+  // Strategy 1: Modifier + Core combo
+  if (foundModifier && foundCore) {
+    result = `${foundModifier} ${foundCore}`
+  }
+  // Strategy 2: Use first genre with unique twist
+  else if (uniqueDescriptor && foundCore) {
+    result = `${uniqueDescriptor} ${foundCore}`
+  }
+  // Strategy 3: Blend first two genres
+  else if (genres.length >= 2) {
+    const first = parts[0].words[0]
+    const second = parts[1].words[parts[1].words.length - 1]
+    
+    if (first !== second) {
+      result = `${first}-${second}`
+    } else {
+      result = genres[0]
+    }
+  }
+  // Fallback: Just use the first genre
+  else {
+    result = genres[0]
+  }
+  
+  return formatGenreName(result)
 }
 

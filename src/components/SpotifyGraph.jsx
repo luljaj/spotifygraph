@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { forceCenter, forceX, forceY } from 'd3-force'
-import { calculateClusterCenters } from '../utils/graphUtils'
+import { calculateClusterCenters, calculateSpatialGenreLabels } from '../utils/graphUtils'
 import './SpotifyGraph.css'
 
 // Starfield configuration
@@ -27,6 +27,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
   const [hoveredNode, setHoveredNode] = useState(null)
   const [hoveredLink, setHoveredLink] = useState(null)
   const [clusterCenters, setClusterCenters] = useState([])
+  const [spatialLabels, setSpatialLabels] = useState([])
 
   // Default settings
   const {
@@ -153,12 +154,16 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     })
   }, [data.nodes])
 
-  // Update cluster centers after graph simulation
+  // Update cluster centers and spatial labels after graph simulation
   useEffect(() => {
     if (graphRef.current && data.genreClusters?.length > 0) {
       const timer = setTimeout(() => {
         const centers = calculateClusterCenters(data.nodes, data.genreClusters)
         setClusterCenters(centers)
+        
+        // Calculate spatial genre labels for floating overlay
+        const labels = calculateSpatialGenreLabels(data.nodes)
+        setSpatialLabels(labels)
       }, 2000)
       return () => clearTimeout(timer)
     }
@@ -395,6 +400,53 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
     }
   }, [])
 
+  // Render floating genre labels on canvas (drawn after each frame)
+  const handleRenderFramePost = useCallback((ctx, globalScale) => {
+    // Only show labels when zoomed out
+    if (globalScale > 0.9 || spatialLabels.length === 0) return
+    
+    // Calculate opacity based on zoom (fade in as you zoom out)
+    const opacity = Math.min(1, (0.9 - globalScale) * 3)
+    
+    spatialLabels.forEach(label => {
+      // Get the anchor node's current position from data.nodes
+      const anchorNode = data.nodes.find(n => n.id === label.anchorNodeId)
+      if (!anchorNode || !Number.isFinite(anchorNode.x) || !Number.isFinite(anchorNode.y)) return
+      
+      // Position label above the anchor node
+      const x = anchorNode.x
+      const y = anchorNode.y - 30 / globalScale // Offset above the node
+      
+      // Draw label with glow effect
+      const fontSize = Math.max(12, 16 / globalScale)
+      ctx.font = `600 ${fontSize}px 'Inter', 'Instrument Sans', system-ui, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      
+      const text = label.name.toUpperCase()
+      
+      // Draw glow layers
+      ctx.save()
+      ctx.globalAlpha = opacity * 0.3
+      ctx.fillStyle = label.color || '#6366f1'
+      ctx.shadowColor = label.color || '#6366f1'
+      ctx.shadowBlur = 20 / globalScale
+      ctx.fillText(text, x, y)
+      ctx.fillText(text, x, y) // Double for stronger glow
+      ctx.restore()
+      
+      // Draw main text
+      ctx.save()
+      ctx.globalAlpha = opacity * 0.9
+      ctx.fillStyle = '#ffffff'
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
+      ctx.shadowBlur = 4 / globalScale
+      ctx.shadowOffsetY = 2 / globalScale
+      ctx.fillText(text, x, y)
+      ctx.restore()
+    })
+  }, [spatialLabels, data.nodes])
+
   // Zoom to fit on load
   useEffect(() => {
     if (graphRef.current && data.nodes.length > 0) {
@@ -403,6 +455,66 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
       }, 500)
     }
   }, [data.nodes.length])
+
+  // Smooth zoom handling
+  useEffect(() => {
+    if (!containerRef.current || !graphRef.current) return
+    
+    const container = containerRef.current
+    let targetZoom = cameraOffset.current.k
+    let currentZoom = cameraOffset.current.k
+    let animationId = null
+    
+    const ZOOM_SPEED = 0.15 // How much to zoom per scroll step
+    const SMOOTH_FACTOR = 0.12 // Smoothing factor (lower = smoother but slower)
+    const MIN_ZOOM = 0.1
+    const MAX_ZOOM = 8
+    
+    const animateZoom = () => {
+      const diff = targetZoom - currentZoom
+      
+      // If close enough, stop animating
+      if (Math.abs(diff) < 0.001) {
+        currentZoom = targetZoom
+        animationId = null
+        return
+      }
+      
+      // Smoothly interpolate toward target
+      currentZoom += diff * SMOOTH_FACTOR
+      
+      // Apply the zoom
+      if (graphRef.current) {
+        graphRef.current.zoom(currentZoom, 0) // 0 duration since we're animating manually
+      }
+      
+      animationId = requestAnimationFrame(animateZoom)
+    }
+    
+    const handleWheel = (e) => {
+      // Prevent default browser zoom
+      e.preventDefault()
+      
+      // Calculate new target zoom based on scroll direction
+      const zoomDelta = e.deltaY > 0 ? -ZOOM_SPEED : ZOOM_SPEED
+      targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom * (1 + zoomDelta)))
+      
+      // Start animation if not already running
+      if (!animationId) {
+        animationId = requestAnimationFrame(animateZoom)
+      }
+    }
+    
+    // Use passive: false to allow preventDefault
+    container.addEventListener('wheel', handleWheel, { passive: false })
+    
+    return () => {
+      container.removeEventListener('wheel', handleWheel)
+      if (animationId) {
+        cancelAnimationFrame(animationId)
+      }
+    }
+  }, [data.nodes.length]) // Re-attach after graph loads
 
   return (
     <div className="graph-container cosmic-theme" ref={containerRef}>
@@ -425,6 +537,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
         onLinkHover={handleLinkHover}
         onNodeClick={handleNodeClick}
         onZoom={handleZoom}
+        onRenderFramePost={handleRenderFramePost}
         nodeLabel={() => null}
         linkDirectionalParticles={0}
         d3AlphaDecay={0.02}
@@ -434,11 +547,13 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
         backgroundColor="transparent"
         nodeRelSize={1}
         enableNodeDrag={true}
-        enableZoomInteraction={true}
+        enableZoomInteraction={false}
         enablePanInteraction={true}
+        minZoom={0.1}
+        maxZoom={8}
       />
       
-      {/* Genre cluster labels */}
+      {/* Genre cluster labels (sidebar) */}
       {showGenreLabels && clusterCenters.length > 0 && (
         <div className="cluster-labels">
           {clusterCenters.map((cluster) => (
@@ -454,6 +569,7 @@ function SpotifyGraph({ data, onNodeClick, showGenreLabels, settings }) {
           ))}
         </div>
       )}
+      
 
       {/* Hover tooltip at bottom */}
       {hoveredNode && (
