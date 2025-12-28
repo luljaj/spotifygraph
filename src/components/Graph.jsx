@@ -153,9 +153,14 @@ function Graph({
     }
   }, [data])
 
-  // Update force simulation when settings change
+  // Update force simulation when settings change or data loads
   useEffect(() => {
-    if (graphRef.current) {
+    if (!graphRef.current || data.nodes.length === 0) return
+
+    // Small delay to ensure graph is initialized
+    const timer = setTimeout(() => {
+      if (!graphRef.current) return
+
       graphRef.current.d3Force('charge')?.strength(chargeStrength)
 
       // Dynamic link distance based on similarity strength
@@ -173,8 +178,10 @@ function Graph({
       graphRef.current.d3Force('y', forceY(0).strength(0.05))
 
       graphRef.current.d3ReheatSimulation()
-    }
-  }, [chargeStrength, linkDistance])
+    }, 50)
+
+    return () => clearTimeout(timer)
+  }, [chargeStrength, linkDistance, data.nodes.length])
 
   // Custom node rendering - cosmic planet style with artist images
   const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
