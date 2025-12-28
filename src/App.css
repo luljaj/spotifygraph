@@ -73,30 +73,6 @@
   z-index: 1;
 }
 
-/* Loader */
-.loader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-lg);
-  color: var(--color-text-secondary);
-  position: relative;
-  z-index: 1;
-}
-
-.loader__ring {
-  width: 48px;
-  height: 48px;
-  border: 3px solid var(--color-bg-tertiary);
-  border-top-color: var(--color-accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* Error Card */
 .error-card {
   background: rgba(18, 18, 26, 0.9);
@@ -146,14 +122,19 @@
 
 .btn--ghost {
   color: var(--color-text-secondary);
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-bg-elevated);
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(10px);
 }
 
 .btn--ghost:hover {
   color: var(--color-text-primary);
-  background: var(--color-bg-tertiary);
-  border-color: var(--color-bg-tertiary);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn--ghost:active {
+  transform: scale(0.97);
 }
 
 .btn--icon {
@@ -162,21 +143,24 @@
   padding: 0;
   color: var(--color-text-secondary);
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border: none;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(10px);
   transition: all 0.2s ease;
 }
 
 .btn--icon:hover {
   color: var(--color-text-primary);
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.btn--icon:active {
+  transform: scale(0.97);
 }
 
 .btn--icon.btn--active {
   color: #a855f7;
   background: rgba(168, 85, 247, 0.15);
-  border-color: rgba(168, 85, 247, 0.3);
 }
 
 .btn--icon svg {
@@ -217,7 +201,7 @@
     width: 44px;
     height: 44px;
     padding: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-full);
   }
   
   .btn--ghost-icon .btn__label {

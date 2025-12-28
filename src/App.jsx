@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import { useLastFmData } from './hooks/useLastFmData'
 import Login from './components/Login'
 import Info from './components/Info'
+import Loader from './components/Loader'
 import SpotifyGraph from './components/SpotifyGraph'
 import ToolsPanel from './components/ToolsPanel'
 import ArtistDetails from './components/ArtistDetails'
@@ -83,9 +84,6 @@ function App() {
     error && 'app--error'
   ].filter(Boolean).join(' ')
 
-  // Last.fm red color for loading spinner
-  const sourceColor = '#d51007'
-
   // Render content based on current state
   const renderContent = () => {
     // Login screen
@@ -159,10 +157,7 @@ function App() {
 
         <main className="main">
           {dataLoading ? (
-            <div className="loader">
-              <div className="loader__ring" style={{ borderTopColor: sourceColor }}></div>
-              <span>{progress || 'Loading your music taste...'}</span>
-            </div>
+            <Loader progress={progress} />
           ) : (
             <SpotifyGraph
               data={graphData}

@@ -1,0 +1,209 @@
+/* ========================================
+   LOADER - Celestial Orrery
+   A mesmerizing multi-particle orbital system
+   ======================================== */
+
+@keyframes breathe {
+  0%, 100% {
+    opacity: 0.15;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+@keyframes orbitPulse {
+  0%, 100% {
+    stroke-opacity: 0.12;
+  }
+  50% {
+    stroke-opacity: 0.18;
+  }
+}
+
+@keyframes titleGlow {
+  0%, 100% {
+    text-shadow:
+      0 0 40px rgba(200, 220, 255, 0.15),
+      0 0 80px rgba(200, 220, 255, 0.05);
+  }
+  50% {
+    text-shadow:
+      0 0 60px rgba(200, 220, 255, 0.25),
+      0 0 100px rgba(200, 220, 255, 0.1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Container */
+.loader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Ambient glow behind the title */
+.loader__glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  height: 200px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(100, 120, 180, 0.15) 0%,
+    rgba(80, 100, 160, 0.08) 30%,
+    transparent 70%
+  );
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: breathe 6s ease-in-out infinite;
+}
+
+/* SVG orbital paths - subtle visual hints */
+.loader__orbits {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  width: 500px;
+  height: 300px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.loader__orbit-path {
+  fill: none;
+  stroke: rgba(150, 170, 220, 0.5);
+  stroke-width: 1;
+  stroke-opacity: 0.15;
+  animation: orbitPulse 6s ease-in-out infinite;
+}
+
+/* Content wrapper - centers title and progress together */
+.loader__content {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+/* Title - elegant serif with breathing glow */
+.loader__title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  color: #f0f0f5;
+  margin-right: -0.3em; /* Compensate for letter-spacing */
+  animation:
+    fadeInUp 0.8s ease-out,
+    titleGlow 5s ease-in-out infinite;
+  animation-delay: 0s, 0.8s;
+}
+
+/* Orbiting particles */
+.loader__particle {
+  position: absolute;
+  top: 48%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(220, 230, 255, 1) 0%,
+    rgba(calc(180 + var(--particle-hue, 200) * 0.1), 200, 255, 0.8) 40%,
+    transparent 70%
+  );
+  box-shadow:
+    0 0 12px rgba(200, 220, 255, 0.9),
+    0 0 24px rgba(200, 220, 255, 0.5),
+    0 0 36px rgba(200, 220, 255, 0.25);
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+/* Progress text with shimmer */
+.loader__progress {
+  text-align: center;
+  animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.loader__progress-text {
+  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--color-text-muted) 0%,
+    var(--color-text-muted) 40%,
+    var(--color-text-secondary) 50%,
+    var(--color-text-muted) 60%,
+    var(--color-text-muted) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* ========== MOBILE RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .loader__glow {
+    width: 300px;
+    height: 150px;
+  }
+
+  .loader__orbits {
+    width: 350px;
+    height: 200px;
+  }
+
+  .loader__title {
+    letter-spacing: 0.2em;
+    margin-right: -0.2em;
+  }
+
+  .loader__progress {
+    padding: 0 var(--spacing-lg);
+  }
+
+  .loader__progress-text {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .loader__title {
+    letter-spacing: 0.15em;
+    margin-right: -0.15em;
+  }
+}
