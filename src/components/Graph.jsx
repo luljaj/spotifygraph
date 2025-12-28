@@ -2,9 +2,9 @@ import { useRef, useCallback, useEffect, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { forceCenter, forceX, forceY } from 'd3-force'
 import { calculateClusterCenters } from '../utils/graphUtils'
-import './SpotifyGraph.css'
+import './Graph.css'
 
-function SpotifyGraph({ 
+function Graph({ 
   data, 
   onNodeClick, 
   showGenreLabels, 
@@ -51,6 +51,37 @@ function SpotifyGraph({
     window.addEventListener('resize', updateDimensions)
     return () => window.removeEventListener('resize', updateDimensions)
   }, [])
+
+  // Set initial cursor state and handle dragging cursor
+  useEffect(() => {
+    const canvas = containerRef.current?.querySelector('canvas')
+    if (!canvas) return
+
+    canvas.style.cursor = 'grab'
+
+    // Handle grabbing cursor during drag
+    const handleMouseDown = (e) => {
+      // Only show grabbing cursor if not hovering a node
+      if (!hoveredNode && e.button === 0) {
+        canvas.style.cursor = 'grabbing'
+      }
+    }
+
+    const handleMouseUp = () => {
+      // Restore appropriate cursor based on hover state
+      canvas.style.cursor = hoveredNode ? 'pointer' : 'grab'
+    }
+
+    canvas.addEventListener('mousedown', handleMouseDown)
+    canvas.addEventListener('mouseup', handleMouseUp)
+    canvas.addEventListener('mouseleave', handleMouseUp)
+
+    return () => {
+      canvas.removeEventListener('mousedown', handleMouseDown)
+      canvas.removeEventListener('mouseup', handleMouseUp)
+      canvas.removeEventListener('mouseleave', handleMouseUp)
+    }
+  }, [dimensions, hoveredNode])
 
   // Preload images for nodes with proper cleanup and cache eviction
   useEffect(() => {
@@ -286,8 +317,10 @@ function SpotifyGraph({
   // Handle node hover
   const handleNodeHover = useCallback((node) => {
     setHoveredNode(node)
-    if (containerRef.current) {
-      containerRef.current.style.cursor = node ? 'pointer' : 'grab'
+    // Set cursor on canvas element directly to avoid conflicts
+    const canvas = containerRef.current?.querySelector('canvas')
+    if (canvas) {
+      canvas.style.cursor = node ? 'pointer' : 'grab'
     }
   }, [])
 
@@ -566,4 +599,4 @@ function getClusterColor(index) {
   return colors[index % colors.length]
 }
 
-export default SpotifyGraph
+export default Graph

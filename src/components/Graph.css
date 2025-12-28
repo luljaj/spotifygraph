@@ -11,14 +11,9 @@
 }
 
 .graph-container canvas {
-  cursor: grab;
   /* Smooth rendering hints */
   image-rendering: auto;
   -webkit-font-smoothing: antialiased;
-}
-
-.graph-container canvas:active {
-  cursor: grabbing;
 }
 
 /* Smooth transitions for the graph container */

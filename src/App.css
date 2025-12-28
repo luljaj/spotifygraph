@@ -75,25 +75,39 @@
 
 /* Error Card */
 .error-card {
-  background: rgba(18, 18, 26, 0.9);
-  border: 1px solid var(--color-bg-elevated);
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
   border-radius: var(--radius-lg);
-  padding: var(--spacing-xl);
+  padding: var(--spacing-2xl) var(--spacing-xl);
   text-align: center;
-  max-width: 400px;
+  max-width: 360px;
   position: relative;
   z-index: 1;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 0 60px rgba(100, 120, 180, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .error-card h2 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
   margin-bottom: var(--spacing-sm);
   color: var(--color-text-primary);
 }
 
 .error-card p {
+  font-size: 0.9rem;
   color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  line-height: 1.6;
+}
+
+.error-card .btn {
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
 }
 
 /* Buttons */

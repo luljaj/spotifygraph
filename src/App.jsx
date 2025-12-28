@@ -4,7 +4,7 @@ import { useLastFmData } from './hooks/useLastFmData'
 import Login from './components/Login'
 import Info from './components/Info'
 import Loader from './components/Loader'
-import SpotifyGraph from './components/SpotifyGraph'
+import Graph from './components/Graph'
 import ToolsPanel from './components/ToolsPanel'
 import ArtistDetails from './components/ArtistDetails'
 import Starfield from './components/Starfield'
@@ -159,7 +159,7 @@ function App() {
           {dataLoading ? (
             <Loader progress={progress} />
           ) : (
-            <SpotifyGraph
+            <Graph
               data={graphData}
               onNodeClick={setSelectedArtist}
               showGenreLabels={showGenreLabels}
