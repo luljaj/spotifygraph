@@ -33,8 +33,8 @@ function Graph({
   // Default settings
   const {
     nodeScale = 1,
-    chargeStrength = -100,
-    linkDistance = 50,
+    chargeStrength = -150,
+    linkDistance = 100,
   } = settings || {}
 
   // Handle window resize

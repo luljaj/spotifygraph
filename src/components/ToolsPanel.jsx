@@ -101,7 +101,7 @@ function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenre
             <input
               type="range"
               min="10"
-              max="200"
+              max="250"
               step="5"
               value={settings.linkDistance}
               onChange={(e) => handleChange('linkDistance', parseFloat(e.target.value))}
