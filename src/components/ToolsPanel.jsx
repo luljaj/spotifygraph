@@ -1,3 +1,4 @@
+import { DEFAULT_SETTINGS } from '../config/graphSettings'
 import './ToolsPanel.css'
 
 function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenreLabels, showArtistLabels, onToggleArtistLabels, onClose }) {
@@ -5,11 +6,11 @@ function ToolsPanel({ settings, onSettingsChange, showGenreLabels, onToggleGenre
     onSettingsChange({ ...settings, [key]: value })
   }
 
-  const labelOpacity = settings?.labelOpacity ?? 0.6
-  const linkOpacity = settings?.linkOpacity ?? 1
-  const nodeScale = settings?.nodeScale ?? 1
-  const chargeStrength = settings?.chargeStrength ?? -120
-  const linkDistance = settings?.linkDistance ?? 60
+  const labelOpacity = settings?.labelOpacity ?? DEFAULT_SETTINGS.labelOpacity
+  const linkOpacity = settings?.linkOpacity ?? DEFAULT_SETTINGS.linkOpacity
+  const nodeScale = settings?.nodeScale ?? DEFAULT_SETTINGS.nodeScale
+  const chargeStrength = settings?.chargeStrength ?? DEFAULT_SETTINGS.chargeStrength
+  const linkDistance = settings?.linkDistance ?? DEFAULT_SETTINGS.linkDistance
 
   // Handle backdrop click
   const handleBackdropClick = (e) => {

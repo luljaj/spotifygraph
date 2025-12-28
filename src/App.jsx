@@ -9,23 +9,23 @@ import ToolsPanel from './components/ToolsPanel'
 import ArtistDetails from './components/ArtistDetails'
 import Starfield from './components/Starfield'
 import { Analytics } from "@vercel/analytics/react"
+import { DEFAULT_SETTINGS } from './config/graphSettings'
 import './App.css'
-
-// Default graph settings
-const DEFAULT_SETTINGS = {
-  labelOpacity: 0.6,
-  nodeScale: 1,
-  linkOpacity: 1,
-  chargeStrength: -120,
-  linkDistance: 60
-}
 
 // Mobile breakpoint
 const MOBILE_BREAKPOINT = 768
+const LASTFM_USER_KEY = 'lastfm:username'
 
 function App() {
   // Last.fm username state
-  const [lastfmUsername, setLastfmUsername] = useState(null)
+  const [lastfmUsername, setLastfmUsername] = useState(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      return localStorage.getItem(LASTFM_USER_KEY) || null
+    } catch {
+      return null
+    }
+  })
 
   // Last.fm data hook
   const lastfmData = useLastFmData(lastfmUsername)
@@ -53,11 +53,23 @@ function App() {
 
   // Handle Last.fm login
   const handleLastFmLogin = async (username) => {
-    setLastfmUsername(username)
+    const cleaned = username.trim()
+    setLastfmUsername(cleaned)
+    try {
+      localStorage.setItem(LASTFM_USER_KEY, cleaned)
+    } catch {
+      // Ignore storage failures
+    }
   }
 
   // Handle logout
   const handleLogout = () => {
+    try {
+      localStorage.removeItem(LASTFM_USER_KEY)
+    } catch {
+      // Ignore storage failures
+    }
+    setShowSettings(false)
     setLastfmUsername(null)
   }
 
@@ -81,7 +93,7 @@ function App() {
   // Determine app state classes
   const appClasses = [
     'app',
-    error && 'app--error'
+    error && artists.length === 0 && 'app--error'
   ].filter(Boolean).join(' ')
 
   // Render content based on current state
@@ -96,7 +108,7 @@ function App() {
     }
 
     // Error state
-    if (error) {
+    if (error && artists.length === 0) {
       return (
         <div className="error-card">
           <h2>Something went wrong</h2>
@@ -134,14 +146,7 @@ function App() {
                     <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
                   </svg>
                 </button>
-                <button className="btn btn--ghost btn--ghost-icon" onClick={exportData} title="Export">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-                    <polyline points="7,10 12,15 17,10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                  <span className="btn__label">Export</span>
-                </button>
+      
               </>
             )}
             <button className="btn btn--ghost btn--ghost-icon" onClick={handleLogout} title="Logout">
@@ -156,7 +161,7 @@ function App() {
         </header>
 
         <main className="main">
-          {dataLoading ? (
+          {dataLoading && artists.length === 0 ? (
             <Loader progress={progress} />
           ) : (
             <Graph

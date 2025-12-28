@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { forceCenter, forceX, forceY } from 'd3-force'
 import { calculateClusterCenters } from '../utils/graphUtils'
+import { DEFAULT_SETTINGS } from '../config/graphSettings'
 import './Graph.css'
 
 function Graph({
@@ -31,11 +32,11 @@ function Graph({
 
   // Default settings
   const {
-    labelOpacity = 0.6,
-    nodeScale = 1,
-    linkOpacity = 1,
-    chargeStrength = -150,
-    linkDistance = 60,
+    labelOpacity = DEFAULT_SETTINGS.labelOpacity,
+    nodeScale = DEFAULT_SETTINGS.nodeScale,
+    linkOpacity = DEFAULT_SETTINGS.linkOpacity,
+    chargeStrength = DEFAULT_SETTINGS.chargeStrength,
+    linkDistance = DEFAULT_SETTINGS.linkDistance,
   } = settings || {}
 
   const normalizedLabelOpacity = Number.isFinite(labelOpacity)
