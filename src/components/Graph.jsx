@@ -227,6 +227,7 @@ function Graph({
 
     let nodeOpacity = 1
     let glowIntensity = 1
+    let glowColor = nodeColor
     let ringColor = 'rgba(255, 255, 255, 0.15)'
     let glowRadius = size * (isHovered ? 3 : 1.8)
     let glowOpacity = isHovered ? 0.6 : 0.15
@@ -234,9 +235,10 @@ function Graph({
     switch (highlightState) {
       case 'current':
         glowIntensity = 3
-        ringColor = visuals.currentNodeColor || '#FFD700'
-        glowRadius = size * 3.5
-        glowOpacity = 0.7
+        ringColor = visuals.currentNodeColor || '#1DB954'
+        glowColor = visuals.currentNodeColor || '#1DB954'
+        glowRadius = size * 2.8
+        glowOpacity = 0.45
         break
       case 'target':
         glowIntensity = 2.5
@@ -298,8 +300,8 @@ function Graph({
         node.x, node.y, size * 0.5,
         node.x, node.y, glowRadius
       )
-      gradient.addColorStop(0, `${nodeColor}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`)
-      gradient.addColorStop(0.5, `${nodeColor}${Math.round(glowOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`)
+      gradient.addColorStop(0, `${glowColor}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`)
+      gradient.addColorStop(0.5, `${glowColor}${Math.round(glowOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`)
       gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
 
       ctx.beginPath()
@@ -312,8 +314,8 @@ function Graph({
         node.x, node.y, size * 0.5,
         node.x, node.y, glowRadius
       )
-      gradient.addColorStop(0, `${nodeColor}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`)
-      gradient.addColorStop(0.5, `${nodeColor}${Math.round(glowOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`)
+      gradient.addColorStop(0, `${glowColor}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`)
+      gradient.addColorStop(0.5, `${glowColor}${Math.round(glowOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`)
       gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
 
       ctx.beginPath()
@@ -326,8 +328,8 @@ function Graph({
       node.x, node.y, size * 0.5,
       node.x, node.y, glowRadius
     )
-    gradient.addColorStop(0, `${nodeColor}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`)
-    gradient.addColorStop(0.5, `${nodeColor}${Math.round(glowOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`)
+    gradient.addColorStop(0, `${glowColor}${Math.round(glowOpacity * 255).toString(16).padStart(2, '0')}`)
+    gradient.addColorStop(0.5, `${glowColor}${Math.round(glowOpacity * 0.5 * 255).toString(16).padStart(2, '0')}`)
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
     
     ctx.beginPath()
@@ -744,8 +746,8 @@ function Graph({
       )}
       
 
-      {/* Hover tooltip at bottom - desktop only (no mobile tooltip) */}
-      {hoveredNode && (
+      {/* Hover tooltip at bottom - disabled in connections mode */}
+      {hoveredNode && mode !== 'connections' && (
         <div className="node-tooltip cosmic-tooltip">
           <span className="node-tooltip__name">{hoveredNode.name}</span>
           {hoveredNode.genres?.length > 0 && (

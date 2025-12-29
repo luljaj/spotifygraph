@@ -33,7 +33,7 @@ export const CONNECTIONS_CONFIG = {
     hiddenOpacity: 0.08,       // Opacity for hidden nodes
     revealedOpacity: 0.4,      // Opacity for revealed (failed) nodes
     pathColor: '#1DB954',      // Spotify green for path
-    currentNodeColor: '#f59e0b', // Warm orange for current position
+    currentNodeColor: '#1DB954', // Spotify green for current position
     targetNodeColor: '#EC4899',  // Pink/magenta for target
     failedGuessColor: '#EF4444', // Red for wrong guesses
   },

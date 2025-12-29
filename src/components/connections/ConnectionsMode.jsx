@@ -29,7 +29,11 @@ function ConnectionsMode({ graphData, connections, onExit }) {
   const [suggestions, setSuggestions] = useState([])
   const [activeIndex, setActiveIndex] = useState(-1)
   const [isFocused, setIsFocused] = useState(false)
+  const [lastAddedIndex, setLastAddedIndex] = useState(null)
   const inputRef = useRef(null)
+  const pathListRef = useRef(null)
+  const addTimerRef = useRef(null)
+  const previousPathLength = useRef(0)
   const blurTimeout = useRef(null)
   const suppressSuggestionsRef = useRef(false)
   const isHintSelecting = Boolean(gameState?.hintSelectionActive)
@@ -61,8 +65,41 @@ function ConnectionsMode({ graphData, connections, onExit }) {
       setQuery('')
       setSuggestions([])
       setActiveIndex(-1)
+      setLastAddedIndex(null)
+      previousPathLength.current = 0
     }
   }, [isPlaying])
+
+  useEffect(() => {
+    if (!isPlaying) return
+    const list = pathListRef.current
+    if (!list) return
+
+    requestAnimationFrame(() => {
+      list.scrollLeft = Math.max(0, list.scrollWidth - list.clientWidth)
+    })
+  }, [isPlaying, gameState?.pathArtists?.length])
+
+  useEffect(() => {
+    if (!isPlaying) return
+    const length = gameState?.pathArtists?.length ?? 0
+    if (length <= 0) return
+    const previousLength = previousPathLength.current
+
+    if (length > previousLength) {
+      if (addTimerRef.current) {
+        clearTimeout(addTimerRef.current)
+      }
+      setLastAddedIndex(length - 1)
+      addTimerRef.current = setTimeout(() => {
+        setLastAddedIndex(null)
+      }, 420)
+    } else if (length < previousLength) {
+      setLastAddedIndex(null)
+    }
+
+    previousPathLength.current = length
+  }, [isPlaying, gameState?.pathArtists?.length])
 
   useEffect(() => {
     if (!isPlaying || !isFocused || isHintSelecting) {
@@ -106,6 +143,9 @@ function ConnectionsMode({ graphData, connections, onExit }) {
     return () => {
       if (blurTimeout.current) {
         clearTimeout(blurTimeout.current)
+      }
+      if (addTimerRef.current) {
+        clearTimeout(addTimerRef.current)
       }
     }
   }, [])
@@ -215,22 +255,37 @@ function ConnectionsMode({ graphData, connections, onExit }) {
     }, 100)
   }
 
-  const feedbackType = gameState?.lastGuessResult
-    ? (gameState.lastGuessResult.success
-      ? 'success'
-      : gameState.lastGuessResult.type === 'not_found'
-        ? 'warning'
-        : 'error')
-    : null
-  const showSuccessToast = gameState?.lastGuessResult?.success
-    && gameState.lastGuessResult.type !== 'complete'
-  const showWarningToast = gameState?.lastGuessResult
-    && !gameState.lastGuessResult.success
-    && gameState.lastGuessResult.type === 'not_connected'
+  const toastData = useMemo(() => {
+    const result = gameState?.lastGuessResult
+    if (!result || result.type === 'complete') return null
+
+    if (result.success) {
+      return { message: result.message, tone: 'success' }
+    }
+
+    const warningTypes = new Set(['not_connected', 'not_found', 'no_hidden', 'hint_invalid'])
+    const tone = warningTypes.has(result.type) ? 'warning' : 'error'
+    return { message: result.message, tone }
+  }, [gameState?.lastGuessResult])
 
   const inputPlaceholder = isHintSelecting
-    ? 'Select a hidden node...'
-    : 'Type an artist name...'
+    ? 'Select a hidden artist...'
+    : 'Plot the path to next artist...'
+
+  const jumpClass = useMemo(() => {
+    const hops = gameState?.hops ?? 0
+    const optimal = gameState?.optimalHops ?? 0
+    if (!Number.isFinite(optimal) || optimal <= 0) {
+      return 'connections-panel__stat-number--jumps-neutral'
+    }
+    if (hops <= optimal) {
+      return 'connections-panel__stat-number--jumps-good'
+    }
+    if (hops < optimal * 2) {
+      return 'connections-panel__stat-number--jumps-warn'
+    }
+    return 'connections-panel__stat-number--jumps-bad'
+  }, [gameState?.hops, gameState?.optimalHops])
 
   if (!connections) return null
 
@@ -254,6 +309,10 @@ function ConnectionsMode({ graphData, connections, onExit }) {
             targetArtist={gameState.targetArtist}
             connectedArtists={connectedArtists}
             onConnectionSelect={handleConnectionSelect}
+            onBack={handleBack}
+            onHint={handleHint}
+            canBack={canBacktrack}
+            isHintSelecting={isHintSelecting}
             hops={gameState.hops}
             hintCount={gameState.hintCount}
             mode={gameState.mode}
@@ -264,29 +323,20 @@ function ConnectionsMode({ graphData, connections, onExit }) {
           />
 
           <div className="connections-panel">
-            {isHintSelecting && (
-              <div className="connections-panel__hint-inline">
-                Hint active. Click a hidden node to reveal it.
-              </div>
-            )}
             <div className="connections-panel__card">
               <div className="connections-panel__path">
-                <div className="connections-panel__path-header">
-                  <span className="connections-panel__path-label">Your Path</span>
-                  <div className="connections-panel__path-meta">
-                    <span>Guesses: {gameState.guessCount}</span>
-                    <span>Jumps: {gameState.hops}</span>
-                    <span>Hints: {gameState.hintCount}</span>
-                  </div>
-                </div>
-
-                <div className="connections-panel__path-list">
+                <div className="connections-panel__path-list" ref={pathListRef}>
                   {gameState.pathArtists.map((artist, index) => {
                     const isLast = index === gameState.pathArtists.length - 1
                     const isClickable = canBacktrack && !isLast
+                    const isAdded = index === lastAddedIndex
+                    const isLinkAdded = lastAddedIndex != null && index === lastAddedIndex - 1
 
                     return (
-                      <div key={artist.id} className="connections-panel__path-item">
+                      <div
+                        key={artist.id}
+                        className={`connections-panel__path-item ${isAdded ? 'is-added' : ''}`}
+                      >
                         <button
                           type="button"
                           className={`connections-panel__path-button ${isClickable ? 'is-clickable' : ''}`}
@@ -300,12 +350,45 @@ function ConnectionsMode({ graphData, connections, onExit }) {
                           {artist.name}
                         </button>
                         {!isLast && (
-                          <span className="connections-panel__path-arrow">{'>'}</span>
+                          <span
+                            className={`connections-panel__path-arrow ${isLinkAdded ? 'is-added' : ''}`}
+                            aria-hidden="true"
+                          >
+                            <svg
+                              className="connections-panel__path-arrow-icon"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            >
+                              <path d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                          </span>
                         )}
                       </div>
                     )
                   })}
                 </div>
+              </div>
+
+              <div className="connections-panel__stats">
+                <span className="connections-panel__stat-number connections-panel__stat-number--guesses">
+                  {gameState.guessCount}
+                </span>{' '}
+                guesses,{' '}
+                <span className={`connections-panel__stat-number ${jumpClass}`}>
+                  {gameState.hops}
+                </span>{' '}
+                /{' '}
+                <span className="connections-panel__stat-number connections-panel__stat-number--optimal">
+                  {gameState.optimalHops}
+                </span>{' '}
+                jumps,{' '}
+                <span className="connections-panel__stat-number connections-panel__stat-number--hints">
+                  {gameState.hintCount}
+                </span>{' '}
+                hints used
               </div>
 
               <div className="connections-panel__input-wrap">
@@ -324,22 +407,6 @@ function ConnectionsMode({ graphData, connections, onExit }) {
                     autoComplete="off"
                     disabled={isHintSelecting}
                   />
-                  <button
-                    type="button"
-                    className="btn btn--ghost"
-                    onClick={handleBack}
-                    disabled={!canBacktrack || isHintSelecting}
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn--ghost connections-panel__hint-button ${isHintSelecting ? 'is-active' : ''}`}
-                    onClick={handleHint}
-                    disabled={!isPlaying}
-                  >
-                    {isHintSelecting ? 'Cancel Hint' : 'Hint'}
-                  </button>
                   <button
                     type="button"
                     className="btn btn--primary"
@@ -369,25 +436,14 @@ function ConnectionsMode({ graphData, connections, onExit }) {
                 </div>
               </div>
 
-              {gameState.lastGuessResult && !gameState.lastGuessResult.success && gameState.lastGuessResult.type !== 'not_connected' && (
-                <div className={`connections-panel__feedback connections-panel__feedback--${feedbackType}`}>
-                  {gameState.lastGuessResult.message}
-                </div>
-              )}
             </div>
           </div>
         </>
       )}
 
-      {showSuccessToast && (
-        <div className="connections-toast">
-          {gameState.lastGuessResult.message}
-        </div>
-      )}
-
-      {showWarningToast && (
-        <div className="connections-toast connections-toast--warning">
-          {gameState.lastGuessResult.message}
+      {toastData && (
+        <div className={`connections-toast ${toastData.tone ? `connections-toast--${toastData.tone}` : ''}`}>
+          {toastData.message}
         </div>
       )}
 
