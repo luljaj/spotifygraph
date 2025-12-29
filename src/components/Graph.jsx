@@ -223,6 +223,7 @@ function Graph({
 
     const nodeColor = node.color || '#6366f1'
     const visuals = CONNECTIONS_CONFIG.visuals
+    const isHintSelecting = connectionsState?.isHintSelecting
 
     let nodeOpacity = 1
     let glowIntensity = 1
@@ -269,12 +270,24 @@ function Graph({
         ringColor = 'rgba(255, 255, 255, 0.05)'
         glowRadius = size * 1.4
         glowOpacity = 0.02
+        if (isHintSelecting) {
+          nodeOpacity = Math.max(nodeOpacity, 0.18)
+          ringColor = 'rgba(96, 165, 250, 0.2)'
+          glowOpacity = 0.08
+        }
         break
       case 'dimmed':
         nodeOpacity = 0.15
         glowIntensity = 0.3
         glowRadius = size * 1.5
         glowOpacity = 0.05
+        break
+      case 'revealed':
+        nodeOpacity = visuals.revealedOpacity ?? 0.4
+        glowIntensity = 0.6
+        ringColor = 'rgba(255, 255, 255, 0.2)'
+        glowRadius = size * 1.7
+        glowOpacity = 0.15
         break
     }
 
@@ -427,7 +440,7 @@ function Graph({
       ctx.fillStyle = '#ffffff'
       ctx.fillText(label, node.x, labelY + 2)
     }
-  }, [hoveredNode, clickedNode, nodeScale, showArtistLabels, normalizedLabelOpacity, getNodeHighlightState, mode])
+  }, [hoveredNode, clickedNode, nodeScale, showArtistLabels, normalizedLabelOpacity, getNodeHighlightState, mode, connectionsState?.isHintSelecting])
 
   // Custom link rendering - simple constellation lines, brighter for clicked node connections
   const linkCanvasObject = useCallback((link, ctx) => {
@@ -494,9 +507,11 @@ function Graph({
 
   // Handle node hover
   const handleNodeHover = useCallback((node) => {
+    const isHintSelecting = connectionsState?.isHintSelecting
+
     if (mode === 'connections' && node) {
       const highlightState = getNodeHighlightState(node)
-      if (highlightState === 'hidden') {
+      if (highlightState === 'hidden' && !isHintSelecting) {
         setHoveredNode(null)
         const canvas = containerRef.current?.querySelector('canvas')
         if (canvas) {
@@ -510,9 +525,13 @@ function Graph({
     // Set cursor on canvas element directly to avoid conflicts
     const canvas = containerRef.current?.querySelector('canvas')
     if (canvas) {
-      canvas.style.cursor = mode === 'connections' ? 'grab' : (node ? 'pointer' : 'grab')
+      if (mode === 'connections' && isHintSelecting) {
+        canvas.style.cursor = node ? 'pointer' : 'grab'
+      } else {
+        canvas.style.cursor = mode === 'connections' ? 'grab' : (node ? 'pointer' : 'grab')
+      }
     }
-  }, [mode, getNodeHighlightState])
+  }, [mode, getNodeHighlightState, connectionsState?.isHintSelecting])
 
   // Handle node click - different behavior for mobile vs desktop
   const handleNodeClick = useCallback((node) => {

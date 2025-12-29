@@ -21,6 +21,8 @@ function ConnectionsMode({ graphData, connections, onExit }) {
     newChallenge,
     searchArtists,
     clearFeedback,
+    beginHintSelection,
+    cancelHintSelection,
   } = connections || {}
 
   const [query, setQuery] = useState('')
@@ -29,6 +31,8 @@ function ConnectionsMode({ graphData, connections, onExit }) {
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef(null)
   const blurTimeout = useRef(null)
+  const suppressSuggestionsRef = useRef(false)
+  const isHintSelecting = Boolean(gameState?.hintSelectionActive)
 
   useEffect(() => {
     if (!startGame) return
@@ -46,7 +50,7 @@ function ConnectionsMode({ graphData, connections, onExit }) {
   }, [isPlaying])
 
   useEffect(() => {
-    if (!isPlaying || !isFocused) {
+    if (!isPlaying || !isFocused || isHintSelecting) {
       setSuggestions([])
       setActiveIndex(-1)
       return
@@ -54,6 +58,13 @@ function ConnectionsMode({ graphData, connections, onExit }) {
 
     const trimmed = query.trim()
     if (trimmed.length < CONNECTIONS_CONFIG.input.minQueryLength) {
+      setSuggestions([])
+      setActiveIndex(-1)
+      return
+    }
+
+    if (suppressSuggestionsRef.current) {
+      suppressSuggestionsRef.current = false
       setSuggestions([])
       setActiveIndex(-1)
       return
@@ -100,8 +111,25 @@ function ConnectionsMode({ graphData, connections, onExit }) {
     inputRef.current?.focus()
   }
 
+  const handleHint = () => {
+    if (isHintSelecting) {
+      cancelHintSelection?.()
+      setTimeout(() => inputRef.current?.focus(), 0)
+      return
+    }
+
+    const started = beginHintSelection?.()
+    if (started) {
+      setQuery('')
+      setSuggestions([])
+      setActiveIndex(-1)
+      setIsFocused(false)
+      inputRef.current?.blur()
+    }
+  }
+
   const handleKeyDown = (event) => {
-    if (!isPlaying) return
+    if (!isPlaying || isHintSelecting) return
 
     if (event.key === 'ArrowDown') {
       if (!suggestions.length) return
@@ -131,9 +159,22 @@ function ConnectionsMode({ graphData, connections, onExit }) {
       setSuggestions([])
       setActiveIndex(-1)
     }
+
+    if (event.key === 'Tab' && !event.shiftKey) {
+      if (!suggestions.length) return
+      event.preventDefault()
+      const index = activeIndex >= 0 ? activeIndex : 0
+      const suggestion = suggestions[index]
+      if (!suggestion) return
+      suppressSuggestionsRef.current = true
+      setQuery(suggestion.name)
+      setSuggestions([])
+      setActiveIndex(-1)
+    }
   }
 
   const handleFocus = () => {
+    if (isHintSelecting) return
     if (blurTimeout.current) {
       clearTimeout(blurTimeout.current)
     }
@@ -153,6 +194,10 @@ function ConnectionsMode({ graphData, connections, onExit }) {
         ? 'warning'
         : 'error')
     : null
+
+  const inputPlaceholder = isHintSelecting
+    ? 'Select a hidden node...'
+    : 'Type an artist name...'
 
   if (!connections) return null
 
@@ -175,6 +220,7 @@ function ConnectionsMode({ graphData, connections, onExit }) {
             currentArtist={gameState.currentArtist}
             targetArtist={gameState.targetArtist}
             hops={gameState.hops}
+            hintCount={gameState.hintCount}
             mode={gameState.mode}
             startTime={gameState.startTime}
             canUndo={false}
@@ -230,16 +276,25 @@ function ConnectionsMode({ graphData, connections, onExit }) {
                     onKeyDown={handleKeyDown}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
-                    placeholder="Type an artist name..."
+                    placeholder={inputPlaceholder}
                     className="connections-panel__input-field"
                     aria-label="Artist name"
                     autoComplete="off"
+                    disabled={isHintSelecting}
                   />
+                  <button
+                    type="button"
+                    className={`btn btn--ghost connections-panel__hint-button ${isHintSelecting ? 'is-active' : ''}`}
+                    onClick={handleHint}
+                    disabled={!isPlaying}
+                  >
+                    {isHintSelecting ? 'Cancel Hint' : 'Hint'}
+                  </button>
                   <button
                     type="button"
                     className="btn btn--primary"
                     onClick={() => handleSubmit(query)}
-                    disabled={!query.trim()}
+                    disabled={isHintSelecting || !query.trim()}
                   >
                     Guess
                   </button>
@@ -264,6 +319,12 @@ function ConnectionsMode({ graphData, connections, onExit }) {
                 </div>
               </div>
 
+              {isHintSelecting && (
+                <div className="connections-panel__hint">
+                  Hint active. Click a hidden node to reveal it.
+                </div>
+              )}
+
               {gameState.lastGuessResult && (
                 <div className={`connections-panel__feedback connections-panel__feedback--${feedbackType}`}>
                   {gameState.lastGuessResult.message}
@@ -279,6 +340,7 @@ function ConnectionsMode({ graphData, connections, onExit }) {
           path={gameState.path}
           hops={gameState.hops}
           guessCount={gameState.guessCount}
+          hintCount={gameState.hintCount}
           optimalHops={gameState.optimalHops}
           optimalPath={gameState.optimalPath}
           mode={gameState.mode}

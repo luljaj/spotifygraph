@@ -5,6 +5,7 @@ function ConnectionsOverlay({
   currentArtist,
   targetArtist,
   hops,
+  hintCount,
   mode,
   startTime,
   canUndo,
@@ -37,7 +38,7 @@ function ConnectionsOverlay({
           onClick={onExit}
           title="Exit game"
         >
-          ✕
+          Exit
         </button>
 
         {canUndo && (
@@ -53,23 +54,29 @@ function ConnectionsOverlay({
         <div className="connections-overlay__stats">
           {mode === 'competitive' && (
             <span className="connections-overlay__timer">
-              ⏱️ {formatTime(elapsed)}
+              {formatTime(elapsed)}
             </span>
           )}
 
           <span className="connections-overlay__hops">
-            Hops: {hops}
+            Jumps: {hops}
+          </span>
+
+          <span className="connections-overlay__hints">
+            Hints: {hintCount}
           </span>
         </div>
 
         <div className="connections-overlay__target">
-          <span className="connections-overlay__target-label">Target:</span>
-          {targetArtist.image && (
+          <span className="connections-overlay__target-label">Destination:</span>
+          {targetArtist.image ? (
             <img
               src={targetArtist.image}
               alt={targetArtist.name}
               className="connections-overlay__target-image"
             />
+          ) : (
+            <div className="connections-overlay__target-image connections-overlay__target-image--placeholder" />
           )}
           <span className="connections-overlay__target-name">
             {targetArtist.name}

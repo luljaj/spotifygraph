@@ -199,6 +199,11 @@ function App() {
               isMobile={isMobile}
               mode={appMode}
               connectionsState={appMode === 'connections' ? connectionsGame : null}
+              onConnectionsNodeClick={appMode === 'connections' ? (node) => {
+                if (connectionsGame.isHintSelecting) {
+                  connectionsGame.revealHintNode?.(node.id)
+                }
+              } : null}
             />
           )}
 

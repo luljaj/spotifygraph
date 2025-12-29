@@ -14,21 +14,23 @@ function ConnectionsSetup({
     <div className="connections-setup">
       <div className="connections-setup__card">
         <h2 className="connections-setup__title">
-          🌟 Connections Challenge
+          Connections
         </h2>
 
         <p className="connections-setup__subtitle">
-          Connect these two artists:
+          Chart a course between these two artists
         </p>
 
         <div className="connections-setup__artists">
           <div className="connections-setup__artist">
-            {startArtist.image && (
+            {startArtist.image ? (
               <img
                 src={startArtist.image}
                 alt={startArtist.name}
                 className="connections-setup__artist-image"
               />
+            ) : (
+              <div className="connections-setup__artist-image connections-setup__artist-image--placeholder" />
             )}
             <span className="connections-setup__artist-name">
               {startArtist.name}
@@ -36,19 +38,21 @@ function ConnectionsSetup({
           </div>
 
           <div className="connections-setup__arrow">
-            <span>?</span>
+  
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </div>
 
           <div className="connections-setup__artist">
-            {targetArtist.image && (
+            {targetArtist.image ? (
               <img
                 src={targetArtist.image}
                 alt={targetArtist.name}
                 className="connections-setup__artist-image"
               />
+            ) : (
+              <div className="connections-setup__artist-image connections-setup__artist-image--placeholder" />
             )}
             <span className="connections-setup__artist-name">
               {targetArtist.name}
@@ -57,7 +61,7 @@ function ConnectionsSetup({
         </div>
 
         <p className="connections-setup__hint">
-          Can be done in {optimalHops} hops
+          Optimal path length: {optimalHops} jumps
         </p>
 
         <div className="connections-setup__actions">
@@ -65,13 +69,13 @@ function ConnectionsSetup({
             className="btn btn--ghost"
             onClick={onNewChallenge}
           >
-            🎲 Different Challenge
+            Random Trajectory
           </button>
           <button
             className="btn btn--primary"
             onClick={onStart}
           >
-            ▶ Start
+            Launch
           </button>
         </div>
 
@@ -79,7 +83,7 @@ function ConnectionsSetup({
           className="connections-setup__exit"
           onClick={onExit}
         >
-          ✕ Exit
+          Exit
         </button>
       </div>
     </div>

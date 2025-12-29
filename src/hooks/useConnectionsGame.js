@@ -39,6 +39,8 @@ export function useConnectionsGame(graphData) {
     revealedArtists: new Set(), // All revealed artist IDs (path + failed)
     failedGuesses: [],          // Array of { artist, fromArtist } for wrong guesses
     guessCount: 0,
+    hintCount: 0,               // Number of hints used
+    hintSelectionActive: false,
 
     // Timing
     startTime: null,
@@ -95,6 +97,10 @@ export function useConnectionsGame(graphData) {
       return 'failed'
     }
 
+    if (gameState.revealedArtists.has(nodeId)) {
+      return 'revealed'
+    }
+
     // Hidden
     return 'hidden'
   }, [gameState])
@@ -137,6 +143,8 @@ export function useConnectionsGame(graphData) {
       revealedArtists: new Set(),
       failedGuesses: [],
       guessCount: 0,
+      hintCount: 0,
+      hintSelectionActive: false,
       startTime: null,
       endTime: null,
       lastGuessResult: null,
@@ -326,6 +334,8 @@ export function useConnectionsGame(graphData) {
       revealedArtists: new Set(),
       failedGuesses: [],
       guessCount: 0,
+      hintCount: 0,
+      hintSelectionActive: false,
       startTime: null,
       endTime: null,
       lastGuessResult: null,
@@ -345,6 +355,84 @@ export function useConnectionsGame(graphData) {
     }))
   }, [])
 
+  const beginHintSelection = useCallback(() => {
+    if (gameState.phase !== 'playing') return false
+    if (!graphData?.nodes?.length) return false
+
+    const hasHidden = graphData.nodes.some(node => getNodeState(node.id) === 'hidden')
+    if (!hasHidden) {
+      const result = {
+        success: false,
+        type: 'no_hidden',
+        message: 'All nodes are already visible'
+      }
+      setGameState(prev => ({
+        ...prev,
+        lastGuessResult: result,
+      }))
+      return false
+    }
+
+    setGameState(prev => ({
+      ...prev,
+      hintSelectionActive: true,
+    }))
+
+    return true
+  }, [gameState.phase, graphData?.nodes, getNodeState])
+
+  const cancelHintSelection = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      hintSelectionActive: false,
+    }))
+  }, [])
+
+  const revealHintNode = useCallback((nodeId) => {
+    if (gameState.phase !== 'playing' || !gameState.hintSelectionActive) return null
+
+    const revealedArtist = nodeMap.get(nodeId)
+    if (!revealedArtist) return null
+
+    const state = getNodeState(nodeId)
+    if (state !== 'hidden') {
+      const result = {
+        success: false,
+        type: 'hint_invalid',
+        message: 'Select a hidden node to reveal'
+      }
+      setGameState(prev => ({
+        ...prev,
+        lastGuessResult: result,
+      }))
+      return result
+    }
+
+    setGameState(prev => {
+      const newRevealed = new Set(prev.revealedArtists)
+      newRevealed.add(nodeId)
+      return {
+        ...prev,
+        revealedArtists: newRevealed,
+        hintCount: prev.hintCount + 1,
+        hintSelectionActive: false,
+        lastGuessResult: {
+          success: true,
+          type: 'hint',
+          artist: revealedArtist,
+          message: `Revealed: ${revealedArtist.name}`
+        }
+      }
+    })
+
+    return {
+      success: true,
+      type: 'hint',
+      artist: revealedArtist,
+      message: `Revealed: ${revealedArtist.name}`
+    }
+  }, [gameState.phase, gameState.hintSelectionActive, nodeMap, getNodeState])
+
   return {
     // State
     gameState,
@@ -360,6 +448,7 @@ export function useConnectionsGame(graphData) {
     canBacktrack: gameState.phase === 'playing'
       && CONNECTIONS_CONFIG.gameplay.allowBacktrack
       && gameState.path.length > 1,
+    isHintSelecting: gameState.hintSelectionActive,
 
     // Actions
     startGame,
@@ -369,6 +458,9 @@ export function useConnectionsGame(graphData) {
     exitGame,
     newChallenge,
     clearFeedback,
+    beginHintSelection,
+    cancelHintSelection,
+    revealHintNode,
 
     // Utilities
     searchArtists,
